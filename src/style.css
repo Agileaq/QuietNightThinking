@@ -1,0 +1,532 @@
+:root {
+  --bg-night: #070b16;
+  --bg-panel: rgba(10, 17, 32, 0.72);
+  --border-subtle: rgba(185, 212, 255, 0.22);
+  --moon-silver: #e3efff;
+  --moon-blue: #8ab8ff;
+  --warm-gold: #ffba52;
+  --seal-red: #b62921;
+  --font-serif: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --font-calligraphy: "Kaiti SC", "STKaiti", "KaiTi", "Songti SC", serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 22%, #132342 0%, #070b16 70%);
+  color: var(--moon-silver);
+  font-family: var(--font-serif);
+}
+
+#canvas-container {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.cinematic-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(7, 11, 22, 0) 52%,
+    rgba(4, 7, 15, 0.68) 100%
+  );
+}
+
+/* Top HUD */
+.top-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 32px;
+  pointer-events: none;
+}
+
+.poem-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  padding: 8px 16px;
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+}
+
+.dynasty-seal {
+  background: var(--seal-red);
+  color: #fff4ec;
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.poem-header-title {
+  font-size: 15px;
+  letter-spacing: 3px;
+  color: var(--moon-silver);
+}
+
+.camera-mode-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  letter-spacing: 1.2px;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.3s ease, color 0.3s ease;
+}
+
+.camera-mode-badge.orbit-active {
+  border-color: var(--warm-gold);
+  color: var(--warm-gold);
+}
+
+.badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--moon-blue);
+  box-shadow: 0 0 8px var(--moon-blue);
+}
+
+.camera-mode-badge.orbit-active .badge-dot {
+  background: var(--warm-gold);
+  box-shadow: 0 0 10px var(--warm-gold);
+}
+
+/* Vertical Calligraphy Stage */
+.subtitle-stage {
+  position: absolute;
+  top: 86px;
+  right: 42px;
+  bottom: 130px;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.single-verse-panel {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 24px 22px;
+  background: linear-gradient(180deg, rgba(10, 18, 36, 0.64), rgba(7, 11, 22, 0.32));
+  border: 1px solid rgba(200, 222, 255, 0.18);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+}
+
+.chapter-meta {
+  writing-mode: vertical-rl;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-left: 1px solid rgba(216, 232, 255, 0.2);
+  padding-left: 12px;
+}
+
+.chapter-title {
+  font-size: 16px;
+  letter-spacing: 4px;
+  color: var(--warm-gold);
+}
+
+.chapter-subtitle {
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: rgba(216, 232, 255, 0.72);
+}
+
+.vertical-verse {
+  writing-mode: vertical-rl;
+  font-family: var(--font-calligraphy);
+  font-size: 46px;
+  letter-spacing: 14px;
+  line-height: 1.3;
+  min-height: 270px;
+  display: flex;
+  align-items: center;
+}
+
+.verse-char {
+  display: inline-block;
+  opacity: 0.22;
+  transform: translateY(4px) scale(0.95);
+  transition: opacity 0.45s ease, transform 0.45s ease, text-shadow 0.45s ease, color 0.45s ease;
+}
+
+.verse-char.revealed {
+  opacity: 1;
+  color: #f6faff;
+  transform: translateY(0) scale(1);
+  text-shadow: 0 0 18px rgba(175, 212, 255, 0.85), 0 0 34px rgba(120, 175, 255, 0.45);
+}
+
+.verse-annotations {
+  position: absolute;
+  bottom: -54px;
+  right: 0;
+  text-align: right;
+  min-width: 280px;
+}
+
+.verse-pinyin {
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  color: rgba(216, 232, 255, 0.85);
+  margin-bottom: 3px;
+}
+
+.verse-translation {
+  font-size: 12px;
+  font-style: italic;
+  color: rgba(185, 208, 240, 0.65);
+}
+
+/* Full Poem Outro Panel */
+.full-poem-panel {
+  padding: 28px 32px;
+  background: rgba(9, 15, 28, 0.76);
+  border: 1px solid rgba(220, 235, 255, 0.26);
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+}
+
+.full-poem-columns {
+  display: flex;
+  gap: 26px;
+  align-items: flex-start;
+}
+
+.poem-col {
+  writing-mode: vertical-rl;
+  font-family: var(--font-calligraphy);
+  font-size: 34px;
+  letter-spacing: 10px;
+  color: #f2f7ff;
+  text-shadow: 0 0 16px rgba(165, 205, 255, 0.65);
+}
+
+.poem-col-title {
+  font-size: 24px;
+  letter-spacing: 6px;
+  color: var(--warm-gold);
+  border-right: 1px solid rgba(255, 186, 82, 0.35);
+  padding-right: 14px;
+}
+
+.poem-col-title small {
+  font-size: 14px;
+  color: rgba(227, 239, 255, 0.78);
+  margin-top: 12px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Opening Cover Modal */
+.cover-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at center, rgba(12, 22, 42, 0.84) 0%, rgba(5, 8, 16, 0.94) 100%);
+  backdrop-filter: blur(12px);
+  transition: opacity 0.65s ease;
+}
+
+.cover-overlay.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cover-card {
+  text-align: center;
+  max-width: 520px;
+  padding: 46px 42px;
+  background: rgba(11, 19, 36, 0.85);
+  border: 1px solid rgba(198, 220, 255, 0.28);
+  border-radius: 18px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.75);
+}
+
+.cover-moon-emblem {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #d4e6ff 55%, rgba(138, 184, 255, 0) 72%);
+  box-shadow: 0 0 36px rgba(176, 210, 255, 0.75);
+}
+
+.cover-kicker {
+  font-size: 12px;
+  letter-spacing: 4px;
+  color: var(--moon-blue);
+  margin-bottom: 10px;
+}
+
+.cover-title {
+  font-family: var(--font-calligraphy);
+  font-size: 54px;
+  font-weight: 400;
+  letter-spacing: 12px;
+  color: #f7fbff;
+  margin-bottom: 8px;
+  text-shadow: 0 0 24px rgba(168, 206, 255, 0.6);
+}
+
+.cover-author {
+  font-size: 16px;
+  letter-spacing: 5px;
+  color: var(--warm-gold);
+  margin-bottom: 24px;
+}
+
+.cover-poem-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 18px;
+  letter-spacing: 4px;
+  color: rgba(227, 239, 255, 0.9);
+  margin-bottom: 30px;
+}
+
+.seal-start-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 28px;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: #fff8f2;
+  background: linear-gradient(135deg, #21375c 0%, #162642 100%);
+  border: 1px solid rgba(220, 235, 255, 0.45);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.seal-start-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--warm-gold);
+  box-shadow: 0 8px 26px rgba(138, 184, 255, 0.35);
+}
+
+.seal-stamp {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 28px;
+  height: 28px;
+  background: var(--seal-red);
+  border: 1px solid rgba(255, 220, 210, 0.6);
+  border-radius: 4px;
+  font-family: var(--font-calligraphy);
+  font-size: 16px;
+}
+
+.cover-hint {
+  margin-top: 20px;
+  font-size: 12px;
+  color: rgba(185, 208, 240, 0.64);
+  letter-spacing: 1px;
+}
+
+/* Bottom Video Player Control Bar */
+.player-bar {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 20px;
+  z-index: 15;
+  padding: 14px 22px 16px;
+  background: rgba(8, 14, 27, 0.82);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.6);
+}
+
+.timeline-wrapper {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.chapter-markers {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  position: relative;
+  height: 22px;
+}
+
+.chapter-marker-btn {
+  position: absolute;
+  transform: translateX(-50%);
+  background: transparent;
+  border: none;
+  color: rgba(205, 224, 252, 0.68);
+  font-family: var(--font-serif);
+  font-size: 12px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.chapter-marker-btn:hover,
+.chapter-marker-btn.active {
+  color: var(--warm-gold);
+  background: rgba(255, 186, 82, 0.12);
+}
+
+.timeline-track {
+  position: relative;
+  height: 8px;
+  background: rgba(180, 206, 245, 0.18);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.timeline-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: linear-gradient(90deg, #6ca2ff 0%, #dcebff 75%, #ffba52 100%);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.timeline-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0%;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid var(--warm-gold);
+  box-shadow: 0 0 12px rgba(255, 186, 82, 0.9);
+  pointer-events: none;
+}
+
+.controls-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.controls-left,
+.controls-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(200, 222, 255, 0.22);
+  border-radius: 8px;
+  color: var(--moon-silver);
+  font-family: var(--font-serif);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--moon-blue);
+}
+
+.primary-ctrl {
+  background: rgba(110, 165, 255, 0.22);
+  border-color: rgba(155, 198, 255, 0.5);
+  min-width: 88px;
+  justify-content: center;
+}
+
+.time-display {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: rgba(216, 232, 255, 0.85);
+  margin-left: 6px;
+}
+
+.active-chapter-pill {
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--warm-gold);
+  background: rgba(255, 186, 82, 0.12);
+  border: 1px solid rgba(255, 186, 82, 0.35);
+  padding: 4px 14px;
+  border-radius: 999px;
+}
+
+.volume-slider {
+  width: 84px;
+  accent-color: var(--moon-blue);
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .subtitle-stage {
+    right: 16px;
+    top: 74px;
+  }
+  .vertical-verse {
+    font-size: 32px;
+    min-height: 180px;
+  }
+  .chapter-marker-btn {
+    font-size: 10px;
+  }
+  .controls-center {
+    display: none;
+  }
+}

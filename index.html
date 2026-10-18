@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>静夜思 · 唐·李白 — Three.js 沉浸式视听诗歌剧场</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Three.js 3D Viewport -->
+      <div id="canvas-container" aria-label="静夜思三维场景"></div>
+
+      <!-- Vignette & Subtle Film Grain Overlay -->
+      <div class="cinematic-vignette"></div>
+
+      <!-- Top Header Info & Camera Mode Indicator -->
+      <header class="top-hud">
+        <div class="poem-badge">
+          <span class="dynasty-seal">唐诗三维剧场</span>
+          <span class="poem-header-title">李白《静夜思》</span>
+        </div>
+        <div id="camera-mode-badge" class="camera-mode-badge">
+          <span class="badge-dot"></span>
+          <span id="camera-mode-text">电影运镜 · 移动鼠标微调视差</span>
+        </div>
+      </header>
+
+      <!-- Vertical Calligraphy Subtitle Stage (Right Side) -->
+      <aside id="subtitle-stage" class="subtitle-stage" aria-live="polite">
+        <div id="single-verse-panel" class="single-verse-panel">
+          <div class="chapter-meta">
+            <span id="chapter-title" class="chapter-title">静夜思</span>
+            <span id="chapter-subtitle" class="chapter-subtitle">唐 · 李白</span>
+          </div>
+          <div id="vertical-verse" class="vertical-verse"></div>
+          <div class="verse-annotations">
+            <p id="verse-pinyin" class="verse-pinyin">Jìng Yè Sī · Táng Lǐ Bái</p>
+            <p id="verse-translation" class="verse-translation">Quiet Night Thought — Li Bai</p>
+          </div>
+        </div>
+
+        <!-- Full Poem Scroll Panel (Shown during Outro) -->
+        <div id="full-poem-panel" class="full-poem-panel hidden">
+          <div class="full-poem-columns">
+            <div class="poem-col">低头思故乡</div>
+            <div class="poem-col">举头望明月</div>
+            <div class="poem-col">疑是地上霜</div>
+            <div class="poem-col">床前明月光</div>
+            <div class="poem-col poem-col-title">
+              <span>静夜思</span>
+              <small>唐 · 李白</small>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Opening Cover Modal (Unlocks Web Audio + Recitation Playback) -->
+      <div id="cover-overlay" class="cover-overlay">
+        <div class="cover-card">
+          <div class="cover-moon-emblem"></div>
+          <p class="cover-kicker">THREE.JS 实时三维视听长卷</p>
+          <h1 class="cover-title">静 夜 思</h1>
+          <p class="cover-author">〔唐〕李 白</p>
+          <div class="cover-poem-preview">
+            <span>床前明月光，疑是地上霜。</span>
+            <span>举头望明月，低头思故乡。</span>
+          </div>
+          <button id="start-btn" class="seal-start-btn" type="button">
+            <span class="seal-stamp">赏</span>
+            <span>展卷播放（开启朗诵与古琴）</span>
+          </button>
+          <p class="cover-hint">
+            支持底部视频进度条任意拖拽 · 分镜章节跳转 · 暂停时拖拽 360° 环视庭院
+          </p>
+        </div>
+      </div>
+
+      <!-- Bottom Video Player Control Bar -->
+      <footer id="player-bar" class="player-bar">
+        <!-- Chapter Markers & Scrubber Track -->
+        <div class="timeline-wrapper">
+          <div id="chapter-markers" class="chapter-markers"></div>
+          <div
+            id="timeline-track"
+            class="timeline-track"
+            role="slider"
+            aria-label="播放进度"
+            aria-valuemin="0"
+            aria-valuemax="32"
+            aria-valuenow="0"
+            tabindex="0"
+          >
+            <div id="timeline-Buffered" class="timeline-buffered"></div>
+            <div id="timeline-progress" class="timeline-progress"></div>
+            <div id="timeline-thumb" class="timeline-thumb"></div>
+          </div>
+        </div>
+
+        <!-- Transport Controls Row -->
+        <div class="controls-row">
+          <div class="controls-left">
+            <button id="play-pause-btn" class="ctrl-btn primary-ctrl" type="button" title="播放/暂停 (Space)">
+              <span id="play-pause-icon">▶</span>
+              <span id="play-pause-label">播放</span>
+            </button>
+            <button id="replay-btn" class="ctrl-btn" type="button" title="从头重播">
+              <span>↺ 重播</span>
+            </button>
+            <span id="time-display" class="time-display">00:00 / 00:32</span>
+          </div>
+
+          <div class="controls-center">
+            <span id="active-chapter-pill" class="active-chapter-pill">序 · 静夜</span>
+          </div>
+
+          <div class="controls-right">
+            <button id="mute-btn" class="ctrl-btn" type="button" title="静音切换">
+              <span id="mute-icon">🔊</span>
+            </button>
+            <input
+              id="volume-slider"
+              class="volume-slider"
+              type="range"
+              min="0"
+              max="1"
+              step="0.02"
+              value="0.85"
+              aria-label="音量"
+            />
+            <button id="fullscreen-btn" class="ctrl-btn" type="button" title="全屏观赏">
+              <span>⛶ 全屏</span>
+            </button>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
