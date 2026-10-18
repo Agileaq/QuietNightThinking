@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   GUQIN_SCORE,
   RECITATION_CUES,
   getTriggeredNotesBetween,
+  shouldTriggerCricketAt,
   AudioEngine,
 } from '../src/audio/AudioEngine.js';
 
@@ -27,5 +28,18 @@ describe('AudioEngine score & cue scheduling', () => {
     expect(() => audio.setVolume(0.5)).not.toThrow();
     expect(() => audio.setMuted(true)).not.toThrow();
     expect(() => audio.pause()).not.toThrow();
+  });
+
+  it('marks audioFailed on audioEl.play() rejection and schedules night cricket chirps', async () => {
+    expect(shouldTriggerCricketAt(2.0, 2.6)).toBe(true);
+    const audio = new AudioEngine({ audioUrl: '/audio/recitation.mp3' });
+    audio.audioEl = {
+      currentTime: 0,
+      paused: true,
+      play: vi.fn().mockRejectedValue(new Error('Decode error')),
+      pause: vi.fn(),
+    };
+    await audio.play(1.0);
+    expect(audio.audioFailed).toBe(true);
   });
 });

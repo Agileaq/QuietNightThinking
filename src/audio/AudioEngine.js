@@ -49,6 +49,15 @@ export const GUQIN_SCORE = [
   { time: 30.6, freq: 110.0, duration: 3.5, type: 'harmonic' },
 ];
 
+const CRICKET_TIMES = [0.8, 2.4, 4.5, 8.8, 10.6, 14.8, 16.5, 21.8, 23.2, 27.8, 30.2, 31.4];
+
+export function shouldTriggerCricketAt(prevTime, nextTime) {
+  if (typeof prevTime !== 'number' || typeof nextTime !== 'number') return false;
+  const delta = nextTime - prevTime;
+  if (delta <= 0 || delta > 1.0) return false;
+  return CRICKET_TIMES.some((t) => t >= prevTime && t < nextTime);
+}
+
 export function getTriggeredNotesBetween(prevTime, nextTime) {
   if (typeof prevTime !== 'number' || typeof nextTime !== 'number') {
     return [];
@@ -135,7 +144,9 @@ export class AudioEngine {
         }
         await this.audioEl.play();
       } catch {
-        // Fallback to Web Speech API if HTMLAudioElement playback is blocked or fails
+        // Mark failed so Web Speech API fallback takes over seamlessly
+        this.audioFailed = true;
+        this._updateSpeechSynthesisFallback(currentTime);
       }
     }
   }
@@ -185,6 +196,10 @@ export class AudioEngine {
     const notes = getTriggeredNotesBetween(prevTime, currentTime);
     for (const note of notes) {
       this._triggerGuqinNote(note);
+    }
+
+    if (shouldTriggerCricketAt(prevTime, currentTime)) {
+      this._triggerCricketChirp();
     }
 
     // Keep HTMLAudioElement drift within 0.35s of timeline
@@ -296,6 +311,27 @@ export class AudioEngine {
     ambGain.connect(this.bgmGain);
     noiseSource.start();
     this.ambienceNode = noiseSource;
+  }
+
+  _triggerCricketChirp() {
+    if (!this.ctx || !this.bgmGain) {
+      return;
+    }
+    const now = this.ctx.currentTime;
+    for (let pulse = 0; pulse < 3; pulse += 1) {
+      const start = now + pulse * 0.055;
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(4250 + pulse * 80, start);
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.linearRampToValueAtTime(0.018, start + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + 0.042);
+      osc.connect(g);
+      g.connect(this.bgmGain);
+      osc.start(start);
+      osc.stop(start + 0.045);
+    }
   }
 
   _updateSpeechSynthesisFallback(currentTime) {
