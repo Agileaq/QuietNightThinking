@@ -53,4 +53,36 @@ describe('CameraController hybrid cinematic & orbit behavior', () => {
     expect(landscapeCamera.fov).toBeLessThan(45);
     expect(landscapeCamera.position.z).toBeLessThan(3.0);
   });
+
+  it('ensures Moon is completely unobstructed by house roof/walls and Poet head is framed in portrait mode during "举头望明月" (t = 20.0s)', () => {
+    // iPhone Pro Max: 430 x 932 (~0.461 aspect)
+    const portraitCamera = new THREE.PerspectiveCamera(45, 430 / 932, 0.1, 200);
+    const controller = new CameraController(portraitCamera, null);
+
+    // During verse3 ("举头望明月" at t = 20.0s)
+    controller.update(20.0, 0.016, true);
+
+    const moonPos = [0.0, 8.8, -18.0];
+    const pMoon = new THREE.Vector3(...moonPos).project(portraitCamera);
+
+    // Moon must be within screen view bounds
+    expect(pMoon.x).toBeGreaterThan(-1.0);
+    expect(pMoon.x).toBeLessThan(1.0);
+    expect(pMoon.y).toBeGreaterThan(-1.0);
+    expect(pMoon.y).toBeLessThan(1.0);
+
+    // Poet head must be within screen view bounds
+    const pPoet = new THREE.Vector3(-0.12, 1.62, 0.48).project(portraitCamera);
+    expect(pPoet.x).toBeGreaterThan(-1.0);
+    expect(pPoet.x).toBeLessThan(1.0);
+    expect(pPoet.y).toBeGreaterThan(-1.0);
+    expect(pPoet.y).toBeLessThan(1.0);
+
+    // Ray from camera to moon at North Wall (z = -0.35) must pass cleanly through window opening (Y in [0.88, 2.68])
+    const dz = moonPos[2] - portraitCamera.position.z;
+    const tWall = (-0.35 - portraitCamera.position.z) / dz;
+    const ryWall = portraitCamera.position.y + tWall * (moonPos[1] - portraitCamera.position.y);
+    expect(ryWall).toBeLessThanOrEqual(2.68);
+    expect(ryWall).toBeGreaterThanOrEqual(0.88);
+  });
 });

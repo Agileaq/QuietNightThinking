@@ -27,14 +27,14 @@ export class TangCourtyard {
     const ambient = new THREE.HemisphereLight(0x3a5f9c, 0x0a0e1a, 0.56);
     this.group.add(ambient);
 
-    // Primary directional moonlight from the Full Moon at (0, 11.5, -18)
+    // Primary directional moonlight from the Full Moon at (0, 8.8, -18)
     this.moonLight = new THREE.DirectionalLight(0xd4e6ff, 1.45);
-    this.moonLight.position.set(0.0, 11.5, -18.0);
+    this.moonLight.position.set(0.0, 8.8, -18.0);
     this.group.add(this.moonLight);
 
     // Focused moonlight SpotLight shining specifically through the house window into the room with soft shadows
     this.windowSpotLight = new THREE.SpotLight(0xd8ebff, 3.4, 16.0, Math.PI * 0.22, 0.62, 1.2);
-    this.windowSpotLight.position.set(0.15, 4.2, -3.5);
+    this.windowSpotLight.position.set(0.15, 3.8, -3.5);
     this.windowSpotLight.target.position.set(0.25, 0.18, 1.35);
     this.windowSpotLight.castShadow = true;
     this.windowSpotLight.shadow.mapSize.width = 1024;
@@ -247,14 +247,14 @@ export class TangCourtyard {
     lintel.position.set(0, 1.8, 0);
     windowGroup.add(lintel);
 
-    // Upper fixed lattice transom (横披窗) at y in [1.42, 1.78]
+    // Upper fixed lattice transom (横披窗) at y in [1.58, 1.78]
     const transomBar = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.045, 0.12), latticeWoodMat);
-    transomBar.position.set(0, 1.42, 0);
+    transomBar.position.set(0, 1.58, 0);
     windowGroup.add(transomBar);
 
     for (let i = -6; i <= 6; i += 1) {
-      const vStick = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.36, 0.03), latticeWoodMat);
-      vStick.position.set(i * 0.21, 1.6, 0);
+      const vStick = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.20, 0.03), latticeWoodMat);
+      vStick.position.set(i * 0.21, 1.69, 0);
       windowGroup.add(vStick);
     }
 
@@ -264,7 +264,7 @@ export class TangCourtyard {
       new THREE.MeshStandardMaterial({ color: 0x8c734b, roughness: 0.7 }),
     );
     bambooRoll.rotation.z = Math.PI / 2;
-    bambooRoll.position.set(0, 1.36, 0.05);
+    bambooRoll.position.set(0, 1.54, 0.05);
     windowGroup.add(bambooRoll);
 
     // Helper to build a carved Tang lattice shutter leaf (窗扇)
@@ -652,10 +652,10 @@ export class TangCourtyard {
       this.group.add(cone);
     }
 
-    // Radiant Full Moon at (0, 11.5, -18.0) aligned with the open window
+    // Radiant Full Moon at (0, 8.8, -18.0) aligned with the open window
     const moonGroup = new THREE.Group();
     moonGroup.name = 'FullMoon';
-    moonGroup.position.set(0.0, 11.5, -18.0);
+    moonGroup.position.set(0.0, 8.8, -18.0);
 
     const moonCore = new THREE.Mesh(
       new THREE.SphereGeometry(2.15, 32, 32),

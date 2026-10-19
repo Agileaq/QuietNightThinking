@@ -129,6 +129,7 @@ export class CameraController {
     }
 
     this.camera.lookAt(this.currentLookAt);
+    this.camera.updateMatrixWorld();
   }
 
   getMode() {

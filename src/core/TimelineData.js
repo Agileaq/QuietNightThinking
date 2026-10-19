@@ -170,9 +170,9 @@ const CAMERA_KEYFRAMES = [
   { t: 13.5, pos: [-0.75, 0.72, 2.55], target: [0.12, 0.25, 1.15], fov: 40 },
   { t: 17.0, pos: [-0.95, 0.95, 2.15], target: [-0.15, 0.42, 0.55], fov: 42 },
   // Verse 3: Beside Li Bai inside the room, tilting upward through the open window toward the Full Moon ("举头望明月")
-  { t: 18.4, pos: [-0.95, 1.68, 1.48], target: [-0.25, 3.8, -6.0], fov: 44 },
-  { t: 21.5, pos: [-0.78, 1.62, 1.38], target: [0.0, 11.5, -18.0], fov: 40 },
-  { t: 23.5, pos: [-0.88, 1.68, 1.45], target: [-0.25, 7.5, -12.0], fov: 42 },
+  { t: 18.4, pos: [-0.65, 1.58, 1.48], target: [-0.15, 3.8, -6.0], fov: 44 },
+  { t: 21.5, pos: [-0.45, 1.52, 1.45], target: [0.0, 7.5, -16.0], fov: 42 },
+  { t: 23.5, pos: [-0.55, 1.58, 1.48], target: [-0.10, 5.5, -10.0], fov: 42 },
   // Verse 4: Tilting downward with Li Bai's bowed head toward the courtyard water basin & golden homeland reflection ("低头思故乡")
   { t: 25.5, pos: [-0.92, 1.78, 1.35], target: [-1.15, 0.32, -0.85], fov: 40 },
   { t: 29.0, pos: [-1.45, 1.92, 2.25], target: [-0.65, 0.55, -0.45], fov: 43 },
@@ -191,10 +191,10 @@ const CAMERA_PORTRAIT_KEYFRAMES = [
   // Verse 2 ("疑是地上霜"): Lowers slightly to emphasize floor frost while keeping poet, bed, and beam framed
   { t: 13.5, pos: [-1.35, 1.75, 4.15], target: [0.42, 0.72, 1.32], fov: 60 },
   { t: 17.0, pos: [-1.45, 1.85, 3.85], target: [0.35, 0.85, 1.15], fov: 60 },
-  // Verse 3 ("举头望明月"): High vertical framing capturing Li Bai looking up in lower left, Full Moon outside in upper sky, bed on lower right
-  { t: 18.4, pos: [-1.35, 1.85, 3.35], target: [0.15, 4.2, -5.2], fov: 62 },
-  { t: 21.5, pos: [-1.15, 1.82, 3.15], target: [0.08, 9.5, -14.0], fov: 60 },
-  { t: 23.5, pos: [-1.25, 1.85, 3.25], target: [0.12, 6.8, -9.5], fov: 60 },
+  // Verse 3 ("举头望明月"): High vertical framing capturing Li Bai looking up in lower-left, Full Moon completely clear of house roof/wall in upper sky
+  { t: 18.2, pos: [0.02, 1.38, 2.25], target: [0.02, 4.2, -10.0], fov: 62 },
+  { t: 21.5, pos: [0.08, 1.32, 2.05], target: [-0.01, 4.8, -12.0], fov: 64 },
+  { t: 23.5, pos: [0.02, 1.38, 2.25], target: [0.02, 4.2, -10.0], fov: 62 },
   // Verse 4 ("低头思故乡"): Poet bowing head with bed, moonlight, and water reflection
   { t: 25.5, pos: [-1.42, 2.12, 3.95], target: [-0.15, 0.72, 0.25], fov: 58 },
   { t: 29.0, pos: [-1.65, 2.35, 4.45], target: [0.25, 1.05, 0.95], fov: 60 },
@@ -273,7 +273,7 @@ export function getSceneStateAt(rawTime) {
   const INIT_YAW = Math.PI - 0.14; // ~3.0016 rad
   const BED_YAW = 1.18; // Facing East-Southeast directly at TangBed (1.35, 0.2, 1.55)
   const FROST_YAW = 2.05; // Facing the indoor frosted floor patch (0.12, 0.21, 1.38)
-  const MOON_YAW = Math.PI; // Facing directly out the North window toward FullMoon (0, 11.5, -18)
+  const MOON_YAW = Math.PI; // Facing directly out the North window toward FullMoon (0, 8.8, -18)
   const BOW_YAW = Math.PI - 0.06;
 
   let poetAction = 'initial';
