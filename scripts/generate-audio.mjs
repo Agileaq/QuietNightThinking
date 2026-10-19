@@ -27,16 +27,6 @@ const SEGMENTS = [
 // 4 distinct Microsoft Edge Neural Chinese voices (100% native pitch, zero resampling distortion)
 const VOICE_PROFILES = [
   {
-    id: 'poet',
-    fileName: 'recitation-poet.mp3',
-    edgeVoice: 'zh-CN-YunjianNeural',
-    edgeRate: '-18%',
-    edgePitch: '-4Hz',
-    fallbackSayVoice: 'Tingting',
-    fallbackSayRate: 130,
-    gain: 0.95,
-  },
-  {
     id: 'scholar',
     fileName: 'recitation-scholar.mp3',
     edgeVoice: 'zh-CN-YunxiNeural',
@@ -44,6 +34,26 @@ const VOICE_PROFILES = [
     edgePitch: '+0Hz',
     fallbackSayVoice: 'Tingting',
     fallbackSayRate: 138,
+    gain: 0.95,
+  },
+  {
+    id: 'female',
+    fileName: 'recitation-female.mp3',
+    edgeVoice: 'zh-CN-XiaoxiaoNeural',
+    edgeRate: '-16%',
+    edgePitch: '+0Hz',
+    fallbackSayVoice: 'Tingting',
+    fallbackSayRate: 132,
+    gain: 0.95,
+  },
+  {
+    id: 'poet',
+    fileName: 'recitation-poet.mp3',
+    edgeVoice: 'zh-CN-YunjianNeural',
+    edgeRate: '-18%',
+    edgePitch: '-4Hz',
+    fallbackSayVoice: 'Tingting',
+    fallbackSayRate: 130,
     gain: 0.95,
   },
   {
@@ -55,16 +65,6 @@ const VOICE_PROFILES = [
     fallbackSayVoice: 'Tingting',
     fallbackSayRate: 118,
     gain: 0.96,
-  },
-  {
-    id: 'female',
-    fileName: 'recitation-female.mp3',
-    edgeVoice: 'zh-CN-XiaoxiaoNeural',
-    edgeRate: '-16%',
-    edgePitch: '+0Hz',
-    fallbackSayVoice: 'Tingting',
-    fallbackSayRate: 132,
-    gain: 0.95,
   },
 ];
 
@@ -287,7 +287,7 @@ function main() {
   }
 
   fs.copyFileSync(
-    path.join(outDir, 'recitation-poet.mp3'),
+    path.join(outDir, 'recitation-scholar.mp3'),
     path.join(outDir, 'recitation.mp3'),
   );
 

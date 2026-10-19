@@ -2,32 +2,32 @@ import { clampTime, TOTAL_DURATION } from '../core/TimelineData.js';
 
 export const VOICE_PRESETS = [
   {
-    id: 'poet',
-    label: '太白 · 云健浑厚男声',
-    url: '/audio/recitation-poet.mp3?v=neural2',
-    fallbackPitch: 0.88,
-    fallbackRate: 0.82,
-  },
-  {
     id: 'scholar',
-    label: '青莲 · 云希清朗书生',
+    label: '青莲 · 清朗书生',
     url: '/audio/recitation-scholar.mp3?v=neural2',
     fallbackPitch: 1.0,
     fallbackRate: 0.85,
   },
   {
-    id: 'elder',
-    label: '沉吟 · 云扬醇厚播音',
-    url: '/audio/recitation-elder.mp3?v=neural2',
-    fallbackPitch: 0.82,
-    fallbackRate: 0.78,
-  },
-  {
     id: 'female',
-    label: '明月 · 晓晓温婉女声',
+    label: '明月 · 温婉女声',
     url: '/audio/recitation-female.mp3?v=neural2',
     fallbackPitch: 1.1,
     fallbackRate: 0.84,
+  },
+  {
+    id: 'poet',
+    label: '太白 · 浑厚男声',
+    url: '/audio/recitation-poet.mp3?v=neural2',
+    fallbackPitch: 0.88,
+    fallbackRate: 0.82,
+  },
+  {
+    id: 'elder',
+    label: '沧桑 · 老者吟诵',
+    url: '/audio/recitation-elder.mp3?v=neural2',
+    fallbackPitch: 0.82,
+    fallbackRate: 0.78,
   },
 ];
 
@@ -104,7 +104,7 @@ export function getTriggeredNotesBetween(prevTime, nextTime) {
 }
 
 export class AudioEngine {
-  constructor({ voiceId = 'poet', audioUrl = null } = {}) {
+  constructor({ voiceId = 'scholar', audioUrl = null } = {}) {
     const preset = VOICE_PRESETS.find((v) => v.id === voiceId) || VOICE_PRESETS[0];
     this.currentVoiceId = preset.id;
     this.audioUrl = audioUrl || preset.url;

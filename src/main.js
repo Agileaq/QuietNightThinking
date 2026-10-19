@@ -63,7 +63,7 @@ function bootstrapApp() {
 
   // 5. Hybrid Camera, Audio & Timeline Engine
   const cameraController = new CameraController(camera, renderer.domElement);
-  const audioEngine = new AudioEngine({ voiceId: 'poet' });
+  const audioEngine = new AudioEngine({ voiceId: 'scholar' });
 
   let ui = null;
 

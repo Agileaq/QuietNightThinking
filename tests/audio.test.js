@@ -44,13 +44,13 @@ describe('AudioEngine score & cue scheduling', () => {
     expect(audio.audioFailed).toBe(true);
   });
 
-  it('provides 4 voice presets (defaulting to poet) and switches voice URL while preserving timestamp', async () => {
+  it('provides 4 voice presets (defaulting to scholar) and switches voice URL while preserving timestamp', async () => {
     expect(VOICE_PRESETS).toHaveLength(4);
-    expect(VOICE_PRESETS.map((v) => v.id)).toEqual(['poet', 'scholar', 'elder', 'female']);
+    expect(VOICE_PRESETS.map((v) => v.id)).toEqual(['scholar', 'female', 'poet', 'elder']);
     const audio = new AudioEngine();
-    expect(audio.currentVoiceId).toBe('poet');
-    await audio.setVoice('scholar', 13.5);
     expect(audio.currentVoiceId).toBe('scholar');
-    expect(audio.audioUrl).toContain('recitation-scholar.mp3');
+    await audio.setVoice('female', 13.5);
+    expect(audio.currentVoiceId).toBe('female');
+    expect(audio.audioUrl).toContain('recitation-female.mp3');
   });
 });
