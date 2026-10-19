@@ -1,31 +1,39 @@
 import { clampTime, TOTAL_DURATION } from '../core/TimelineData.js';
 
+const rawBase =
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) || './';
+const BASE_PREFIX = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+
+export function resolveAudioUrl(fileName) {
+  return `${BASE_PREFIX}audio/${fileName}`;
+}
+
 export const VOICE_PRESETS = [
   {
     id: 'scholar',
     label: '青莲 · 清朗书生',
-    url: '/audio/recitation-scholar.mp3?v=neural2',
+    url: resolveAudioUrl('recitation-scholar.mp3?v=neural2'),
     fallbackPitch: 1.0,
     fallbackRate: 0.85,
   },
   {
     id: 'female',
     label: '明月 · 温婉女声',
-    url: '/audio/recitation-female.mp3?v=neural2',
+    url: resolveAudioUrl('recitation-female.mp3?v=neural2'),
     fallbackPitch: 1.1,
     fallbackRate: 0.84,
   },
   {
     id: 'poet',
     label: '太白 · 浑厚男声',
-    url: '/audio/recitation-poet.mp3?v=neural2',
+    url: resolveAudioUrl('recitation-poet.mp3?v=neural2'),
     fallbackPitch: 0.88,
     fallbackRate: 0.82,
   },
   {
     id: 'elder',
     label: '沧桑 · 老者吟诵',
-    url: '/audio/recitation-elder.mp3?v=neural2',
+    url: resolveAudioUrl('recitation-elder.mp3?v=neural2'),
     fallbackPitch: 0.82,
     fallbackRate: 0.78,
   },
