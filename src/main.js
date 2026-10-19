@@ -63,7 +63,7 @@ function bootstrapApp() {
 
   // 5. Hybrid Camera, Audio & Timeline Engine
   const cameraController = new CameraController(camera, renderer.domElement);
-  const audioEngine = new AudioEngine({ audioUrl: '/audio/recitation.mp3' });
+  const audioEngine = new AudioEngine({ voiceId: 'poet' });
 
   let ui = null;
 
@@ -119,6 +119,9 @@ function bootstrapApp() {
     },
     onMuteToggle: (muted) => {
       audioEngine.setMuted(muted);
+    },
+    onVoiceChange: (voiceId) => {
+      audioEngine.setVoice(voiceId, timeline.currentTime);
     },
   });
 

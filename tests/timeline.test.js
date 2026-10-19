@@ -47,6 +47,33 @@ describe('TimelineData deterministic state', () => {
     const poseVerse3 = getCameraPose(21.0);
     expect(poseVerse3.target[1]).toBeGreaterThan(poseVerse2.target[1] + 5.0);
   });
+
+  it('synchronizes activeCharIndex and speakingCharIndex with exact 2-3 poetic cadence', () => {
+    // Verse 1: 床(5.80-6.30) 前(6.32-6.85) [pause] 明(7.25-7.72) 月(7.75-8.22) 光(8.25-8.95)
+    const beforeSpeak = getSceneStateAt(5.4);
+    expect(beforeSpeak.activeCharIndex).toBe(0);
+    expect(beforeSpeak.speakingCharIndex).toBe(-1);
+
+    const char1 = getSceneStateAt(5.95); // "床"
+    expect(char1.activeCharIndex).toBe(1);
+    expect(char1.speakingCharIndex).toBe(0);
+
+    const char2 = getSceneStateAt(6.5); // "前"
+    expect(char2.activeCharIndex).toBe(2);
+    expect(char2.speakingCharIndex).toBe(1);
+
+    const caesuraPause = getSceneStateAt(7.05); // 2-3 poetic pause between 前 and 明
+    expect(caesuraPause.activeCharIndex).toBe(2);
+    expect(caesuraPause.speakingCharIndex).toBe(-1);
+
+    const char3 = getSceneStateAt(7.4); // "明"
+    expect(char3.activeCharIndex).toBe(3);
+    expect(char3.speakingCharIndex).toBe(2);
+
+    const char5 = getSceneStateAt(8.5); // "光"
+    expect(char5.activeCharIndex).toBe(5);
+    expect(char5.speakingCharIndex).toBe(4);
+  });
 });
 
 describe('TimelineEngine playback & scrubbing', () => {

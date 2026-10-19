@@ -14,12 +14,14 @@ export class PlayerUI {
     onReplay,
     onVolumeChange,
     onMuteToggle,
+    onVoiceChange,
   } = {}) {
     this.onTogglePlay = onTogglePlay;
     this.onSeek = onSeek;
     this.onReplay = onReplay;
     this.onVolumeChange = onVolumeChange;
     this.onMuteToggle = onMuteToggle;
+    this.onVoiceChange = onVoiceChange;
 
     this.isDraggingScrubber = false;
     this.isMuted = false;
@@ -47,6 +49,7 @@ export class PlayerUI {
     this.timelineThumb = document.getElementById('timeline-thumb');
     this.chapterMarkersContainer = document.getElementById('chapter-markers');
 
+    this.voiceSelect = document.getElementById('voice-select');
     this.muteBtn = document.getElementById('mute-btn');
     this.muteIcon = document.getElementById('mute-icon');
     this.volumeSlider = document.getElementById('volume-slider');
@@ -155,6 +158,14 @@ export class PlayerUI {
 
       this.timelineTrack.addEventListener('pointerup', endScrub);
       this.timelineTrack.addEventListener('pointercancel', endScrub);
+    }
+
+    if (this.voiceSelect) {
+      this.voiceSelect.addEventListener('change', (e) => {
+        if (this.onVoiceChange) {
+          this.onVoiceChange(e.target.value);
+        }
+      });
     }
 
     if (this.muteBtn) {
@@ -284,6 +295,7 @@ export class PlayerUI {
         const charNodes = this.verticalVerse.querySelectorAll('.verse-char');
         charNodes.forEach((node, idx) => {
           node.classList.toggle('revealed', idx < state.activeCharIndex);
+          node.classList.toggle('speaking', idx === state.speakingCharIndex);
         });
       }
     }

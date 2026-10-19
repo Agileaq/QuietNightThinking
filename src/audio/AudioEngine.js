@@ -1,14 +1,44 @@
 import { clampTime, TOTAL_DURATION } from '../core/TimelineData.js';
 
-export const RECITATION_CUES = [
-  { id: 'intro', start: 1.2, end: 4.2, text: '静夜思。唐，李白。' },
-  { id: 'verse1', start: 5.8, end: 9.8, text: '床前明月光，' },
-  { id: 'verse2', start: 11.8, end: 15.8, text: '疑是地上霜。' },
-  { id: 'verse3', start: 17.8, end: 22.0, text: '举头望明月，' },
-  { id: 'verse4', start: 24.2, end: 28.2, text: '低头思故乡。' },
+export const VOICE_PRESETS = [
+  {
+    id: 'poet',
+    label: '太白 · 浑厚古风男声',
+    url: '/audio/recitation-poet.mp3',
+    fallbackPitch: 0.82,
+    fallbackRate: 0.75,
+  },
+  {
+    id: 'scholar',
+    label: '青莲 · 清朗书生男声',
+    url: '/audio/recitation-scholar.mp3',
+    fallbackPitch: 0.96,
+    fallbackRate: 0.8,
+  },
+  {
+    id: 'elder',
+    label: '沧桑 · 苍劲老者吟诵',
+    url: '/audio/recitation-elder.mp3',
+    fallbackPitch: 0.72,
+    fallbackRate: 0.68,
+  },
+  {
+    id: 'female',
+    label: '明月 · 温婉空灵女声',
+    url: '/audio/recitation-female.mp3',
+    fallbackPitch: 1.12,
+    fallbackRate: 0.8,
+  },
 ];
 
-// Pentatonic Guqin score (A2=110, C3=130.81, D3=146.83, E3=164.81, G3=196.0, A3=220.0, C4=261.63, D4=293.66, E4=329.63)
+export const RECITATION_CUES = [
+  { id: 'intro', start: 1.2, end: 4.2, text: '静夜思。唐，李白。' },
+  { id: 'verse1', start: 5.8, end: 9.0, text: '床前，明月光，' },
+  { id: 'verse2', start: 11.8, end: 15.0, text: '疑是，地上霜。' },
+  { id: 'verse3', start: 17.8, end: 21.0, text: '举头，望明月，' },
+  { id: 'verse4', start: 24.2, end: 27.5, text: '低头，思故乡。' },
+];
+
 export const GUQIN_SCORE = [
   // Intro (0 - 5s): Sparse harmonics in the quiet night
   { time: 0.25, freq: 220.0, duration: 2.8, type: 'harmonic' },
@@ -66,7 +96,6 @@ export function getTriggeredNotesBetween(prevTime, nextTime) {
   if (delta <= 0) {
     return [];
   }
-  // If the user scrubbed forward by > 1.0s, only trigger at most 1 nearest note so it doesn't burst
   if (delta > 1.0) {
     const nearest = GUQIN_SCORE.find((n) => Math.abs(n.time - nextTime) <= 0.35);
     return nearest ? [nearest] : [];
@@ -75,8 +104,10 @@ export function getTriggeredNotesBetween(prevTime, nextTime) {
 }
 
 export class AudioEngine {
-  constructor({ audioUrl = '/audio/recitation.mp3' } = {}) {
-    this.audioUrl = audioUrl;
+  constructor({ voiceId = 'poet', audioUrl = null } = {}) {
+    const preset = VOICE_PRESETS.find((v) => v.id === voiceId) || VOICE_PRESETS[0];
+    this.currentVoiceId = preset.id;
+    this.audioUrl = audioUrl || preset.url;
     this.ctx = null;
     this.masterGain = null;
     this.bgmGain = null;
@@ -112,15 +143,47 @@ export class AudioEngine {
     }
 
     if (!this.audioEl && typeof Audio !== 'undefined') {
-      this.audioEl = new Audio(this.audioUrl);
-      this.audioEl.preload = 'auto';
-      this.audioEl.volume = this.muted ? 0 : this.volume;
-      this.audioEl.addEventListener('canplaythrough', () => {
-        this.audioReady = true;
-      });
-      this.audioEl.addEventListener('error', () => {
-        this.audioFailed = true;
-      });
+      this._createAudioElement(this.audioUrl);
+    }
+  }
+
+  _createAudioElement(url) {
+    if (typeof Audio === 'undefined') return;
+    if (this.audioEl) {
+      try {
+        this.audioEl.pause();
+      } catch {
+        // Ignore
+      }
+    }
+    this.audioReady = false;
+    this.audioFailed = false;
+    this.audioEl = new Audio(url);
+    this.audioEl.preload = 'auto';
+    this.audioEl.volume = this.muted ? 0 : this.volume;
+    this.audioEl.addEventListener('canplaythrough', () => {
+      this.audioReady = true;
+    });
+    this.audioEl.addEventListener('error', () => {
+      this.audioFailed = true;
+    });
+  }
+
+  async setVoice(voiceId, currentTime = 0) {
+    const preset = VOICE_PRESETS.find((v) => v.id === voiceId);
+    if (!preset) return;
+
+    this.currentVoiceId = preset.id;
+    this.audioUrl = preset.url;
+    this.lastSpokenCueId = null;
+
+    if (typeof window !== 'undefined' && typeof Audio !== 'undefined') {
+      const wasPlaying = this.isPlaying;
+      this._createAudioElement(this.audioUrl);
+      this.seek(currentTime);
+      if (wasPlaying) {
+        await this.play(currentTime);
+      }
     }
   }
 
@@ -139,12 +202,11 @@ export class AudioEngine {
     if (this.audioEl && !this.audioFailed) {
       try {
         const clamped = clampTime(currentTime);
-        if (Math.abs(this.audioEl.currentTime - clamped) > 0.25) {
+        if (Math.abs(this.audioEl.currentTime - clamped) > 0.18) {
           this.audioEl.currentTime = clamped;
         }
         await this.audioEl.play();
       } catch {
-        // Mark failed so Web Speech API fallback takes over seamlessly
         this.audioFailed = true;
         this._updateSpeechSynthesisFallback(currentTime);
       }
@@ -202,10 +264,10 @@ export class AudioEngine {
       this._triggerCricketChirp();
     }
 
-    // Keep HTMLAudioElement drift within 0.35s of timeline
+    // Keep HTMLAudioElement tightly locked (within 0.18s) to timeline for character-accurate sync
     if (this.audioEl && !this.audioFailed && !this.audioEl.paused) {
       const drift = Math.abs(this.audioEl.currentTime - currentTime);
-      if (drift > 0.38 && currentTime < TOTAL_DURATION - 0.2) {
+      if (drift > 0.22 && currentTime < TOTAL_DURATION - 0.2) {
         try {
           this.audioEl.currentTime = currentTime;
         } catch {
@@ -257,7 +319,6 @@ export class AudioEngine {
     osc1.type = isHarmonic ? 'sine' : 'triangle';
     osc2.type = 'sine';
 
-    // Subtle pitch glide characteristic of Guqin string pluck
     osc1.frequency.setValueAtTime(baseFreq * (isHarmonic ? 1.0 : 0.992), now);
     osc1.frequency.exponentialRampToValueAtTime(baseFreq, now + 0.09);
 
@@ -282,7 +343,6 @@ export class AudioEngine {
     if (!this.ctx || !this.bgmGain || this.ambienceNode) {
       return;
     }
-    // Gentle filtered night breeze buffer
     const bufferSize = this.ctx.sampleRate * 3;
     const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = noiseBuffer.getChannelData(0);
@@ -343,11 +403,13 @@ export class AudioEngine {
     );
     if (activeCue && activeCue.id !== this.lastSpokenCueId) {
       this.lastSpokenCueId = activeCue.id;
+      const preset = VOICE_PRESETS.find((v) => v.id === this.currentVoiceId) || VOICE_PRESETS[0];
       try {
         window.speechSynthesis.cancel();
         const utter = new SpeechSynthesisUtterance(activeCue.text);
         utter.lang = 'zh-CN';
-        utter.rate = 0.78;
+        utter.rate = preset.fallbackRate;
+        utter.pitch = preset.fallbackPitch;
         utter.volume = this.volume;
         window.speechSynthesis.speak(utter);
       } catch {

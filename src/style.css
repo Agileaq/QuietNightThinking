@@ -179,15 +179,22 @@ body,
 .verse-char {
   display: inline-block;
   opacity: 0.22;
-  transform: translateY(4px) scale(0.95);
-  transition: opacity 0.45s ease, transform 0.45s ease, text-shadow 0.45s ease, color 0.45s ease;
+  transform: translateY(3px) scale(0.94);
+  transition: opacity 0.12s ease-out, transform 0.14s ease-out, text-shadow 0.14s ease-out, color 0.12s ease-out;
 }
 
 .verse-char.revealed {
-  opacity: 1;
-  color: #f6faff;
+  opacity: 0.92;
+  color: #eef5ff;
   transform: translateY(0) scale(1);
-  text-shadow: 0 0 18px rgba(175, 212, 255, 0.85), 0 0 34px rgba(120, 175, 255, 0.45);
+  text-shadow: 0 0 14px rgba(175, 212, 255, 0.72), 0 0 28px rgba(120, 175, 255, 0.35);
+}
+
+.verse-char.speaking {
+  opacity: 1;
+  color: #fff6e0;
+  transform: translateY(0) scale(1.1);
+  text-shadow: 0 0 18px rgba(255, 200, 102, 0.95), 0 0 36px rgba(175, 212, 255, 0.85);
 }
 
 .verse-annotations {
@@ -512,6 +519,38 @@ body,
   width: 84px;
   accent-color: var(--moon-blue);
   cursor: pointer;
+}
+
+.voice-select-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(200, 222, 255, 0.24);
+  border-radius: 8px;
+  font-size: 12px;
+  color: rgba(216, 232, 255, 0.85);
+}
+
+.voice-select-label {
+  color: var(--warm-gold);
+  letter-spacing: 1px;
+}
+
+.voice-select {
+  background: transparent;
+  border: none;
+  color: var(--moon-silver);
+  font-family: var(--font-serif);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+
+.voice-select option {
+  background: #0d1629;
+  color: var(--moon-silver);
 }
 
 @media (max-width: 768px) {

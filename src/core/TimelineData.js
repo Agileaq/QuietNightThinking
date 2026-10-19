@@ -13,6 +13,11 @@ export const CHAPTERS = [
     start: 0.0,
     end: 5.0,
     voiceWindow: [1.2, 4.2],
+    charTimings: [
+      { char: '静', start: 1.20, end: 1.63 },
+      { char: '夜', start: 1.65, end: 2.08 },
+      { char: '思', start: 2.10, end: 2.75 },
+    ],
   },
   {
     id: 'verse1',
@@ -25,7 +30,14 @@ export const CHAPTERS = [
     translation: 'Before my bed, the bright moonlight gleams,',
     start: 5.0,
     end: 11.0,
-    voiceWindow: [5.8, 9.8],
+    voiceWindow: [5.8, 9.0],
+    charTimings: [
+      { char: '床', start: 5.80, end: 6.30 },
+      { char: '前', start: 6.32, end: 6.85 },
+      { char: '明', start: 7.25, end: 7.72 },
+      { char: '月', start: 7.75, end: 8.22 },
+      { char: '光', start: 8.25, end: 8.95 },
+    ],
   },
   {
     id: 'verse2',
@@ -38,7 +50,14 @@ export const CHAPTERS = [
     translation: 'Like autumn frost upon the ground it seems.',
     start: 11.0,
     end: 17.0,
-    voiceWindow: [11.8, 15.8],
+    voiceWindow: [11.8, 15.0],
+    charTimings: [
+      { char: '疑', start: 11.80, end: 12.30 },
+      { char: '是', start: 12.32, end: 12.85 },
+      { char: '地', start: 13.25, end: 13.72 },
+      { char: '上', start: 13.75, end: 14.22 },
+      { char: '霜', start: 14.25, end: 14.95 },
+    ],
   },
   {
     id: 'verse3',
@@ -51,7 +70,14 @@ export const CHAPTERS = [
     translation: 'I raise my head to gaze at the radiant moon,',
     start: 17.0,
     end: 23.5,
-    voiceWindow: [17.8, 22.0],
+    voiceWindow: [17.8, 21.0],
+    charTimings: [
+      { char: '举', start: 17.80, end: 18.30 },
+      { char: '头', start: 18.32, end: 18.85 },
+      { char: '望', start: 19.25, end: 19.72 },
+      { char: '明', start: 19.75, end: 20.22 },
+      { char: '月', start: 20.25, end: 20.95 },
+    ],
   },
   {
     id: 'verse4',
@@ -64,7 +90,14 @@ export const CHAPTERS = [
     translation: 'Then bow my head, lost in thoughts of home.',
     start: 23.5,
     end: 29.0,
-    voiceWindow: [24.2, 28.2],
+    voiceWindow: [24.2, 27.5],
+    charTimings: [
+      { char: '低', start: 24.20, end: 24.70 },
+      { char: '头', start: 24.72, end: 25.25 },
+      { char: '思', start: 25.65, end: 26.12 },
+      { char: '故', start: 26.15, end: 26.62 },
+      { char: '乡', start: 26.65, end: 27.40 },
+    ],
   },
   {
     id: 'outro',
@@ -78,6 +111,7 @@ export const CHAPTERS = [
     start: 29.0,
     end: 32.0,
     voiceWindow: [29.2, 31.5],
+    charTimings: [],
   },
 ];
 
@@ -182,11 +216,7 @@ export function getSceneStateAt(rawTime) {
     frost = 1.0 - 0.12 * smoothstep(28.0, 32.0, t);
   }
 
-  // Poet head pitch:
-  // Neutral (~0) in intro & verse1
-  // Slightly looking down at frost (-0.14 rad) in verse2
-  // Looking up at the moon (+0.58 rad) in verse3 ("举头望明月")
-  // Bowing head in nostalgia (-0.42 rad) in verse4 ("低头思故乡")
+  // Poet head pitch
   let headPitch = 0;
   if (t < 11.0) {
     headPitch = -0.04 * smoothstep(5.0, 10.0, t);
@@ -203,7 +233,7 @@ export function getSceneStateAt(rawTime) {
     headPitch = lerp(-0.42, -0.1, smoothstep(29.0, 31.8, t));
   }
 
-  // Homeland warm golden memory glow ("低头思故乡"): peaks during verse4 (23.8s - 29.0s)
+  // Homeland warm golden memory glow ("低头思故乡")
   let homelandGlow = 0;
   if (t >= 23.5 && t <= 29.5) {
     const rise = smoothstep(23.7, 25.5, t);
@@ -213,18 +243,28 @@ export function getSceneStateAt(rawTime) {
     homelandGlow = 0.65 * (1.0 - smoothstep(29.5, 32.0, t));
   }
 
-  // Moonlight & moon halo intensity: surges during verse1 and peaks during verse3
   const moonbeamIntensity = 0.35 + 0.65 * smoothstep(2.5, 7.5, t);
   const moonHalo = 0.45 + 0.55 * smoothstep(17.0, 20.5, t) * (1.0 - 0.3 * smoothstep(24.0, 28.0, t));
-
-  // Deterministic warm candle flicker
   const candleFlicker = 0.85 + 0.15 * Math.sin(t * 7.3) * Math.cos(t * 3.1);
 
-  // Character reveal progress within current chapter's voiceWindow
+  // Exact per-character synchronization based on chapter.charTimings
   const [vStart, vEnd] = chapter.voiceWindow;
   const voiceProgress = smoothstep(vStart, vEnd, t);
-  const charCount = chapter.verseText.length;
-  const activeCharIndex = Math.min(charCount, Math.floor(voiceProgress * (charCount + 0.99)));
+
+  let activeCharIndex = 0;
+  let speakingCharIndex = -1;
+
+  if (Array.isArray(chapter.charTimings) && chapter.charTimings.length > 0) {
+    for (let i = 0; i < chapter.charTimings.length; i += 1) {
+      const ct = chapter.charTimings[i];
+      if (t >= ct.start) {
+        activeCharIndex = i + 1;
+      }
+      if (t >= ct.start && t <= ct.end) {
+        speakingCharIndex = i;
+      }
+    }
+  }
 
   return {
     t,
@@ -238,6 +278,7 @@ export function getSceneStateAt(rawTime) {
     candleFlicker,
     voiceProgress,
     activeCharIndex,
+    speakingCharIndex,
     showAllVerses: chapter.id === 'outro',
   };
 }
