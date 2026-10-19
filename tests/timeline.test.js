@@ -49,7 +49,7 @@ describe('TimelineData deterministic state', () => {
   });
 
   it('synchronizes activeCharIndex and speakingCharIndex with exact 2-3 poetic cadence', () => {
-    // Verse 1: 床(5.80-6.30) 前(6.32-6.85) [pause] 明(7.25-7.72) 月(7.75-8.22) 光(8.25-8.95)
+    // Verse 1: 床(5.80-6.13) 前(6.13-6.50) [pause 6.50-7.25] 明(7.25-7.52) 月(7.52-7.79) 光(7.79-8.15)
     const beforeSpeak = getSceneStateAt(5.4);
     expect(beforeSpeak.activeCharIndex).toBe(0);
     expect(beforeSpeak.speakingCharIndex).toBe(-1);
@@ -58,19 +58,19 @@ describe('TimelineData deterministic state', () => {
     expect(char1.activeCharIndex).toBe(1);
     expect(char1.speakingCharIndex).toBe(0);
 
-    const char2 = getSceneStateAt(6.5); // "前"
+    const char2 = getSceneStateAt(6.3); // "前"
     expect(char2.activeCharIndex).toBe(2);
     expect(char2.speakingCharIndex).toBe(1);
 
-    const caesuraPause = getSceneStateAt(7.05); // 2-3 poetic pause between 前 and 明
+    const caesuraPause = getSceneStateAt(6.95); // 2-3 poetic pause between 前 and 明
     expect(caesuraPause.activeCharIndex).toBe(2);
     expect(caesuraPause.speakingCharIndex).toBe(-1);
 
-    const char3 = getSceneStateAt(7.4); // "明"
+    const char3 = getSceneStateAt(7.38); // "明"
     expect(char3.activeCharIndex).toBe(3);
     expect(char3.speakingCharIndex).toBe(2);
 
-    const char5 = getSceneStateAt(8.5); // "光"
+    const char5 = getSceneStateAt(7.95); // "光"
     expect(char5.activeCharIndex).toBe(5);
     expect(char5.speakingCharIndex).toBe(4);
   });
