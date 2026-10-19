@@ -125,24 +125,25 @@ export function getChapterAt(rawTime) {
 }
 
 const CAMERA_KEYFRAMES = [
-  // Intro: High courtyard shot gliding down toward the half-open Tang wooden window
-  { t: 0.0, pos: [-4.6, 4.2, 8.8], target: [-0.4, 2.2, -1.5], fov: 46 },
-  { t: 5.0, pos: [-1.3, 2.3, 4.3], target: [-0.2, 1.6, 0.2], fov: 44 },
-  // Verse 1: Bedside interior viewing moonlight streaming across the wooden bed & floor
-  { t: 7.5, pos: [1.75, 1.95, 2.45], target: [-0.35, 1.1, 0.15], fov: 42 },
-  { t: 11.0, pos: [0.65, 1.55, 2.1], target: [-0.45, 0.7, 0.3], fov: 42 },
-  // Verse 2: Low-angle sweep across the frosted courtyard stones ("疑是地上霜")
-  { t: 13.5, pos: [0.2, 0.72, 2.75], target: [-0.6, 0.25, 0.2], fov: 40 },
-  { t: 17.0, pos: [-0.85, 0.92, 3.45], target: [-0.7, 0.45, -0.3], fov: 42 },
-  // Verse 3: Beside Li Bai, tilting dramatically upward toward the radiant full moon ("举头望明月")
-  { t: 18.4, pos: [-1.15, 1.72, 1.9], target: [-0.4, 3.8, -6.0], fov: 44 },
-  { t: 21.5, pos: [-0.95, 1.68, 2.15], target: [0.0, 11.5, -18.0], fov: 40 },
-  { t: 23.5, pos: [-1.05, 1.72, 2.1], target: [-0.3, 7.5, -12.0], fov: 42 },
-  // Verse 4: Tilting downward with Li Bai's bowed head toward the water basin & golden homeland reflection ("低头思故乡")
-  { t: 25.5, pos: [-1.25, 1.82, 2.25], target: [-1.15, 0.32, -0.75], fov: 40 },
-  { t: 29.0, pos: [-1.6, 1.95, 3.0], target: [-1.0, 0.45, -0.6], fov: 43 },
-  // Outro: Wide pullback revealing the entire moonlit Tang courtyard, pine tree, poet, and full moon
-  { t: 32.0, pos: [-5.4, 3.9, 9.4], target: [-0.4, 2.6, -2.5], fov: 46 },
+  // Intro: Courtyard front-quarter view showcasing the Tang house roof, walls, and open window, then gliding inside
+  { t: 0.0, pos: [-3.8, 2.85, -4.8], target: [0.2, 1.85, 0.9], fov: 46 },
+  { t: 3.2, pos: [-2.2, 2.15, -1.8], target: [0.1, 1.55, 0.8], fov: 44 },
+  { t: 5.0, pos: [-1.45, 1.95, 2.35], target: [0.25, 1.25, 0.45], fov: 44 },
+  // Verse 1: Inside the house viewing the window moonlight beam streaming through the open window onto the floor in front of the bed ("床前明月光")
+  { t: 7.5, pos: [-1.35, 1.82, 2.65], target: [0.35, 1.05, 0.65], fov: 42 },
+  { t: 11.0, pos: [-0.85, 1.48, 2.45], target: [0.2, 0.65, 0.95], fov: 42 },
+  // Verse 2: Low-angle sweep inside the room across the window-lit floor as silver frost crystallizes ("疑是地上霜")
+  { t: 13.5, pos: [-0.75, 0.72, 2.55], target: [0.12, 0.25, 1.15], fov: 40 },
+  { t: 17.0, pos: [-0.95, 0.95, 2.15], target: [-0.15, 0.42, 0.55], fov: 42 },
+  // Verse 3: Beside Li Bai inside the room, tilting upward through the open window toward the Full Moon ("举头望明月")
+  { t: 18.4, pos: [-0.95, 1.68, 1.48], target: [-0.25, 3.8, -6.0], fov: 44 },
+  { t: 21.5, pos: [-0.78, 1.62, 1.38], target: [0.0, 11.5, -18.0], fov: 40 },
+  { t: 23.5, pos: [-0.88, 1.68, 1.45], target: [-0.25, 7.5, -12.0], fov: 42 },
+  // Verse 4: Tilting downward with Li Bai's bowed head toward the courtyard water basin & golden homeland reflection ("低头思故乡")
+  { t: 25.5, pos: [-0.92, 1.78, 1.35], target: [-1.15, 0.32, -0.85], fov: 40 },
+  { t: 29.0, pos: [-1.45, 1.92, 2.25], target: [-0.65, 0.55, -0.45], fov: 43 },
+  // Outro: Wide panoramic pullback through the West veranda framing the house, window beam, poet, and full moon
+  { t: 32.0, pos: [-4.8, 3.25, 4.8], target: [0.0, 2.2, -2.5], fov: 46 },
 ];
 
 export function getCameraPose(rawTime) {
