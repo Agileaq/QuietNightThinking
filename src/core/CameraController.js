@@ -62,9 +62,17 @@ export class CameraController {
     }
   }
 
+  _getAspect() {
+    if (this.domElement && this.domElement.clientWidth && this.domElement.clientHeight) {
+      return this.domElement.clientWidth / this.domElement.clientHeight;
+    }
+    return this.camera?.aspect || 1.77;
+  }
+
   onSeek(currentTime) {
     this.resumeBlend = 0;
-    const pose = getCameraPose(currentTime);
+    const aspect = this._getAspect();
+    const pose = getCameraPose(currentTime, aspect);
     this.camera.position.set(pose.position[0], pose.position[1], pose.position[2]);
     this.currentLookAt.set(pose.target[0], pose.target[1], pose.target[2]);
     this.camera.fov = pose.fov;
@@ -92,7 +100,8 @@ export class CameraController {
     const mouseAlpha = 1 - Math.exp(-safeDt * 5.0);
     this.mouseCurrent.lerp(this.mouseTarget, mouseAlpha);
 
-    const pose = getCameraPose(currentTime);
+    const aspect = this._getAspect();
+    const pose = getCameraPose(currentTime, aspect);
     const splinePos = new THREE.Vector3(
       pose.position[0] + this.mouseCurrent.x * 0.24,
       pose.position[1] + this.mouseCurrent.y * 0.14,
@@ -127,7 +136,8 @@ export class CameraController {
   }
 
   _applyPoseImmediate(t) {
-    const pose = getCameraPose(t);
+    const aspect = this._getAspect();
+    const pose = getCameraPose(t, aspect);
     this.camera.position.set(pose.position[0], pose.position[1], pose.position[2]);
     this.currentLookAt.set(pose.target[0], pose.target[1], pose.target[2]);
     this.camera.fov = pose.fov;

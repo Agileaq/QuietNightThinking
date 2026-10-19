@@ -553,19 +553,207 @@ body,
   color: var(--moon-silver);
 }
 
-@media (max-width: 768px) {
-  .subtitle-stage {
-    right: 16px;
-    top: 74px;
+/* ==========================================================================
+   iPhone Pro Max & Mobile Portrait Responsive Adaptation
+   Ensures Subtitles (字), Poet Head (人头), Bed (床), and Moonlight (月光)
+   are all clearly visible and unobstructed on mobile portrait screens.
+   ========================================================================== */
+@media (max-width: 768px), (max-aspect-ratio: 1/1) {
+  /* Safe-area insets for iPhone notch / Dynamic Island */
+  .top-hud {
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 6px;
   }
-  .vertical-verse {
-    font-size: 32px;
-    min-height: 180px;
+
+  .poem-badge {
+    padding: 5px 10px;
+    gap: 8px;
   }
-  .chapter-marker-btn {
+
+  .dynasty-seal {
     font-size: 10px;
+    padding: 2px 6px;
+    letter-spacing: 1px;
   }
+
+  .poem-header-title {
+    font-size: 13px;
+    letter-spacing: 2px;
+  }
+
+  .camera-mode-badge {
+    padding: 5px 10px;
+  }
+
+  .camera-mode-badge #camera-mode-text {
+    display: none;
+  }
+
+  /* Subtitle stage positioned delicately in upper-right without occluding the bed */
+  .subtitle-stage {
+    top: calc(env(safe-area-inset-top, 0px) + 54px);
+    right: 12px;
+    bottom: auto;
+  }
+
+  .single-verse-panel {
+    padding: 14px 10px;
+    gap: 10px;
+    background: linear-gradient(180deg, rgba(8, 14, 28, 0.42), rgba(6, 10, 20, 0.20));
+    border: 1px solid rgba(200, 222, 255, 0.16);
+    backdrop-filter: blur(4px);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  .chapter-meta {
+    gap: 6px;
+    padding-left: 6px;
+    border-left-color: rgba(216, 232, 255, 0.16);
+  }
+
+  .chapter-title {
+    font-size: 13px;
+    letter-spacing: 2.5px;
+  }
+
+  .chapter-subtitle {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+  }
+
+  .vertical-verse {
+    font-size: 26px;
+    letter-spacing: 7px;
+    min-height: 165px;
+  }
+
+  .verse-annotations {
+    position: static;
+    text-align: right;
+    min-width: auto;
+    margin-top: 6px;
+  }
+
+  .verse-pinyin {
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+
+  .verse-translation {
+    font-size: 9.5px;
+    line-height: 1.2;
+  }
+
+  /* Full poem panel outro */
+  .full-poem-panel {
+    padding: 16px 14px;
+    border-radius: 10px;
+  }
+
+  .full-poem-columns {
+    gap: 12px;
+  }
+
+  .poem-col {
+    font-size: 20px;
+    letter-spacing: 6px;
+  }
+
+  .poem-col-title {
+    font-size: 15px;
+    letter-spacing: 3px;
+    padding-right: 8px;
+  }
+
+  .poem-col-title small {
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  /* Bottom Player Bar with iPhone safe-area padding */
+  .player-bar {
+    padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+
+  .controls-row {
+    gap: 8px;
+  }
+
   .controls-center {
     display: none;
+  }
+
+  .volume-slider {
+    display: none;
+  }
+
+  .primary-ctrl {
+    min-width: 68px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .ctrl-btn {
+    padding: 6px 9px;
+    font-size: 12px;
+  }
+
+  .time-display {
+    font-size: 11px;
+    margin-left: 2px;
+  }
+
+  .voice-select-wrap {
+    padding: 3px 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .voice-select {
+    font-size: 11px;
+    max-width: 108px;
+  }
+
+  .chapter-marker-btn {
+    font-size: 9px;
+    padding: 2px 4px;
+  }
+
+  /* Opening Cover Modal */
+  .cover-card {
+    max-width: 90vw;
+    padding: 28px 20px;
+  }
+
+  .cover-moon-emblem {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+  }
+
+  .cover-title {
+    font-size: 26px;
+    letter-spacing: 6px;
+  }
+
+  .cover-author {
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+
+  .cover-poem-preview {
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  .seal-start-btn {
+    padding: 10px 22px;
+    font-size: 14px;
+  }
+
+  .cover-hint {
+    font-size: 10.5px;
+    line-height: 1.5;
   }
 }

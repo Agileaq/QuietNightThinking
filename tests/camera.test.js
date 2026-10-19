@@ -34,4 +34,23 @@ describe('CameraController hybrid cinematic & orbit behavior', () => {
     expect(camera.position.x).toBeGreaterThan(2.0);
     expect(camera.position.x).toBeLessThan(12.0);
   });
+
+  it('adapts camera framing for iPhone Pro Max portrait mode (aspect 0.46) to encompass poet, bed, and moonlight beam', () => {
+    // iPhone Pro Max: 430 x 932 (~0.461 aspect)
+    const portraitCamera = new THREE.PerspectiveCamera(45, 430 / 932, 0.1, 200);
+    const controller = new CameraController(portraitCamera, null);
+
+    // During verse1 ("床前明月光" at t = 8.0s)
+    controller.update(8.0, 0.016, true);
+    expect(portraitCamera.fov).toBeGreaterThan(54);
+    // Camera pulls back further in Z (> 3.8m) to broaden the horizontal field of view
+    expect(portraitCamera.position.z).toBeGreaterThan(3.8);
+
+    // Compare with desktop landscape (16/9)
+    const landscapeCamera = new THREE.PerspectiveCamera(45, 16 / 9, 0.1, 200);
+    const landscapeController = new CameraController(landscapeCamera, null);
+    landscapeController.update(8.0, 0.016, true);
+    expect(landscapeCamera.fov).toBeLessThan(45);
+    expect(landscapeCamera.position.z).toBeLessThan(3.0);
+  });
 });

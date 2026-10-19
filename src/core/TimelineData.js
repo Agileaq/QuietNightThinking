@@ -180,11 +180,32 @@ const CAMERA_KEYFRAMES = [
   { t: 32.0, pos: [-4.8, 3.25, 4.8], target: [0.0, 2.2, -2.5], fov: 46 },
 ];
 
-export function getCameraPose(rawTime) {
-  const t = clampTime(rawTime);
-  for (let i = 0; i < CAMERA_KEYFRAMES.length - 1; i += 1) {
-    const k0 = CAMERA_KEYFRAMES[i];
-    const k1 = CAMERA_KEYFRAMES[i + 1];
+const CAMERA_PORTRAIT_KEYFRAMES = [
+  // Intro: Wide courtyard view into the house in portrait orientation
+  { t: 0.0, pos: [-3.2, 3.2, -5.2], target: [0.2, 1.8, 0.8], fov: 56 },
+  { t: 3.2, pos: [-2.1, 2.4, -1.6], target: [0.15, 1.5, 0.7], fov: 56 },
+  { t: 5.0, pos: [-1.65, 2.25, 4.45], target: [0.48, 1.15, 1.25], fov: 58 },
+  // Verse 1 ("床前明月光"): Elevated pull-back view encompassing poet's head on left, bed on right, window beam in center
+  { t: 7.5, pos: [-1.55, 2.2, 4.35], target: [0.48, 1.18, 1.25], fov: 58 },
+  { t: 11.0, pos: [-1.45, 2.05, 4.25], target: [0.45, 1.12, 1.28], fov: 58 },
+  // Verse 2 ("疑是地上霜"): Lowers slightly to emphasize floor frost while keeping poet, bed, and beam framed
+  { t: 13.5, pos: [-1.35, 1.75, 4.15], target: [0.42, 0.72, 1.32], fov: 60 },
+  { t: 17.0, pos: [-1.45, 1.85, 3.85], target: [0.35, 0.85, 1.15], fov: 60 },
+  // Verse 3 ("举头望明月"): High vertical framing capturing Li Bai looking up in lower left, Full Moon outside in upper sky, bed on lower right
+  { t: 18.4, pos: [-1.35, 1.85, 3.35], target: [0.15, 4.2, -5.2], fov: 62 },
+  { t: 21.5, pos: [-1.15, 1.82, 3.15], target: [0.08, 9.5, -14.0], fov: 60 },
+  { t: 23.5, pos: [-1.25, 1.85, 3.25], target: [0.12, 6.8, -9.5], fov: 60 },
+  // Verse 4 ("低头思故乡"): Poet bowing head with bed, moonlight, and water reflection
+  { t: 25.5, pos: [-1.42, 2.12, 3.95], target: [-0.15, 0.72, 0.25], fov: 58 },
+  { t: 29.0, pos: [-1.65, 2.35, 4.45], target: [0.25, 1.05, 0.95], fov: 60 },
+  // Outro: Panoramic pullback
+  { t: 32.0, pos: [-4.2, 3.85, 6.2], target: [0.2, 1.8, 0.5], fov: 62 },
+];
+
+function interpolateKeyframeTrack(keyframes, t) {
+  for (let i = 0; i < keyframes.length - 1; i += 1) {
+    const k0 = keyframes[i];
+    const k1 = keyframes[i + 1];
     if (t >= k0.t && t <= k1.t) {
       const u = smoothstep(k0.t, k1.t, t);
       return {
@@ -194,11 +215,31 @@ export function getCameraPose(rawTime) {
       };
     }
   }
-  const last = CAMERA_KEYFRAMES[CAMERA_KEYFRAMES.length - 1];
+  const last = keyframes[keyframes.length - 1];
   return {
     position: [...last.pos],
     target: [...last.target],
     fov: last.fov,
+  };
+}
+
+export function getCameraPose(rawTime, aspect = 1.77) {
+  const t = clampTime(rawTime);
+  const landscapePose = interpolateKeyframeTrack(CAMERA_KEYFRAMES, t);
+
+  // If aspect ratio is wide/desktop landscape (>= 1.15), use pure landscape keyframes
+  if (typeof aspect !== 'number' || aspect >= 1.15) {
+    return landscapePose;
+  }
+
+  // For portrait screens (such as iPhone Pro Max with aspect ~0.46), blend into dedicated portrait framing
+  const portraitPose = interpolateKeyframeTrack(CAMERA_PORTRAIT_KEYFRAMES, t);
+  const uPortrait = smoothstep(1.15, 0.55, aspect);
+
+  return {
+    position: lerpVec3(landscapePose.position, portraitPose.position, uPortrait),
+    target: lerpVec3(landscapePose.target, portraitPose.target, uPortrait),
+    fov: lerp(landscapePose.fov, portraitPose.fov, uPortrait),
   };
 }
 
