@@ -514,51 +514,60 @@ export class PoetCharacter {
   }
 
   /**
-   * Generates a continuous, one-piece draped Tang wide sleeve (广袖) along a 3D arm curve
-   * with natural hanging belly and folded cuff, eliminating disjointed primitive seams.
+   * Builds a twist-free wide Tang sleeve (广袖) + integrated brocade cuff border (袖缘)
+   * using a stable up-vector frame along the 3D arm curve (eliminating Frenet torsion flips
+   * and detached floating Torus rings).
    */
-  _createContinuousWideSleeveGeometry(curvePoints, cuffDirSign = 1) {
-    const curve = new THREE.CatmullRomCurve3(curvePoints);
-    const tubularSegs = 28;
-    const radialSegs = 28;
-    const frames = curve.computeFrenetFrames(tubularSegs, false);
-
+  _createSleeveSectionGeometry(curve, uStart, uEnd, radialOffset = 0.0, tubularSegs = 24) {
+    const radialSegs = 32;
     const positions = [];
     const uvs = [];
     const indices = [];
 
-    for (let i = 0; i <= tubularSegs; i += 1) {
-      const u = i / tubularSegs;
-      const pt = curve.getPointAt(u);
-      const N = frames.normals[i];
-      const B = frames.binormals[i];
+    const worldUp = new THREE.Vector3(0, 1, 0);
 
-      // Sleeve radius expands from shoulder (u=0) to deep hanging wide elbow/cuff (u=0.72), then tapers slightly at cuff opening
-      const baseRadius = 0.068 + Math.sin(u * Math.PI * 0.84) * 0.078;
-      // Gravity droop pulls the lower half of the wide sleeve downward in local -Y
-      const gravityBelly = Math.sin(u * Math.PI * 0.92) * 0.11;
+    for (let i = 0; i <= tubularSegs; i += 1) {
+      const localFrac = i / tubularSegs;
+      const u = uStart + (uEnd - uStart) * localFrac;
+      const pt = curve.getPointAt(u);
+      const T = curve.getTangentAt(u).normalize();
+
+      // Stable horizontal side axis B and vertical-ish normal N (no Frenet flipping!)
+      let B = new THREE.Vector3().crossVectors(T, worldUp);
+      if (B.lengthSq() < 0.0001) {
+        B.set(1, 0, 0);
+      } else {
+        B.normalize();
+      }
+      const N = new THREE.Vector3().crossVectors(B, T).normalize();
+
+      // Sleeve radius expands from shoulder (u=0) to wide hanging elbow/cuff, then tapers slightly at wrist opening
+      const baseRadius = 0.062 + Math.sin(u * Math.PI * 0.78) * 0.062 + radialOffset;
+      // Authentic Tang hanging wide-sleeve belly (垂胡袖下垂弧度) along -N
+      const gravityDroop = Math.sin(u * Math.PI * 0.88) * 0.095;
 
       for (let j = 0; j <= radialSegs; j += 1) {
         const v = j / radialSegs;
         const theta = v * Math.PI * 2;
-
-        const foldRipple =
-          Math.cos(theta * 7.0 + u * 4.5) * 0.008 * Math.sin(u * Math.PI);
-        const r = baseRadius + foldRipple;
-
         const cosT = Math.cos(theta);
         const sinT = Math.sin(theta);
 
-        let vx = pt.x + r * (cosT * N.x + sinT * B.x);
-        let vy = pt.y + r * (cosT * N.y + sinT * B.y);
-        let vz = pt.z + r * (cosT * N.z + sinT * B.z);
+        // Soft longitudinal cloth drapery folds
+        const fold = Math.cos(theta * 6.0 + u * 3.2) * 0.0055 * Math.sin(u * Math.PI);
+        const r = baseRadius + fold;
 
-        // Pull bottom of sleeve downward to form authentic Tang hanging wide sleeve (垂胡袖)
-        if (vy < pt.y) {
-          const downFactor = Math.abs(vy - pt.y) / Math.max(0.01, r);
-          vy -= gravityBelly * Math.pow(downFactor, 1.3);
+        // Narrower horizontally (B), deeper vertically (N) for realistic draped cloth silhouette
+        const horizR = r * 0.78;
+        const vertR = r * 1.12;
+
+        let vx = pt.x + cosT * horizR * B.x + sinT * vertR * N.x;
+        let vy = pt.y + cosT * horizR * B.y + sinT * vertR * N.y;
+        let vz = pt.z + cosT * horizR * B.z + sinT * vertR * N.z;
+
+        // Pull lower half (sinT < 0) downward under gravity
+        if (sinT < 0) {
+          vy -= gravityDroop * Math.pow(-sinT, 1.35);
         }
-        vx += cuffDirSign * 0.005 * u;
 
         positions.push(vx, vy, vz);
         uvs.push(u * 2.0, v);
@@ -584,111 +593,333 @@ export class PoetCharacter {
     return preparePBRGeometry(geo);
   }
 
-  _buildArmsAndHands() {
-    const buildSculptedHand = (isLeft) => {
-      const hand = new THREE.Group();
+  /**
+   * Generates a continuous 3-phalanx curved finger or thumb mesh (近节 -> 中节 -> 远节指尖)
+   * with subtle knuckle contours and a tapered rounded fingertip pad.
+   */
+  _createArticulatedFingerGeometry(boneVectors, baseRadius, tipRadius) {
+    const curve = new THREE.CatmullRomCurve3(boneVectors);
+    const tubularSegs = 18;
+    const radialSegs = 12;
+    const positions = [];
+    const uvs = [];
+    const indices = [];
 
-      // Organic rounded palm using deformed Capsule/Sphere instead of flat BoxGeometry
-      const palm = new THREE.Mesh(
-        preparePBRGeometry(new THREE.SphereGeometry(0.028, 16, 14)),
-        this.skinMat,
-      );
-      palm.scale.set(0.85, 1.22, 0.48);
-      hand.add(palm);
+    const upHint = new THREE.Vector3(0, 0, 1);
 
-      // 4 articulated capsule fingers with gentle natural curl
-      const fingerLengths = [0.036, 0.042, 0.039, 0.032];
-      for (let f = 0; f < 4; f += 1) {
-        const fLen = fingerLengths[f];
-        const finger = new THREE.Mesh(
-          new THREE.CapsuleGeometry(0.0046, fLen, 6, 10),
-          this.skinMat,
-        );
-        finger.position.set((f - 1.5) * 0.0095, -0.042 - fLen * 0.2, 0.005);
-        finger.rotation.x = 0.26 + f * 0.04;
-        hand.add(finger);
+    for (let i = 0; i <= tubularSegs; i += 1) {
+      const u = i / tubularSegs;
+      const pt = curve.getPointAt(u);
+      const T = curve.getTangentAt(u).normalize();
+
+      let B = new THREE.Vector3().crossVectors(T, upHint);
+      if (B.lengthSq() < 0.0001) {
+        B.set(1, 0, 0);
+      } else {
+        B.normalize();
+      }
+      const N = new THREE.Vector3().crossVectors(B, T).normalize();
+
+      // Linear taper from knuckle base to fingertip + rounded hemispherical closure at tip (u > 0.86)
+      let r = baseRadius * (1.0 - u) + tipRadius * u;
+      // Subtle anatomical knuckle swellings at PIP (u ≈ 0.45) and DIP (u ≈ 0.74)
+      const pipSwell = Math.exp(-Math.pow((u - 0.45) * 14.0, 2)) * 0.00045;
+      const dipSwell = Math.exp(-Math.pow((u - 0.74) * 16.0, 2)) * 0.0003;
+      r += pipSwell + dipSwell;
+
+      if (u > 0.86) {
+        const tipU = (u - 0.86) / 0.14;
+        r *= Math.cos(tipU * Math.PI * 0.48);
       }
 
-      // Opposable sculpted thumb
-      const sideSign = isLeft ? 1 : -1;
-      const thumb = new THREE.Mesh(
-        new THREE.CapsuleGeometry(0.0054, 0.028, 6, 10),
-        this.skinMat,
-      );
-      thumb.position.set(sideSign * 0.024, -0.016, 0.01);
-      thumb.rotation.z = sideSign * 0.58;
-      thumb.rotation.x = 0.25;
-      hand.add(thumb);
+      for (let j = 0; j <= radialSegs; j += 1) {
+        const v = j / radialSegs;
+        const theta = v * Math.PI * 2;
+        const cosT = Math.cos(theta);
+        const sinT = Math.sin(theta);
 
-      return hand;
-    };
+        // Slightly wider than thick (anatomical finger cross-section)
+        const rx = r * 1.04;
+        const rz = r * 0.92;
 
-    // ================= LEFT ARM (Gracefully clasped behind back: 负手而立) =================
-    this.leftArmGroup = new THREE.Group();
-    this.leftArmGroup.name = 'LeftArmGroup';
-    this.leftArmGroup.position.set(-0.22, 0.49, 0.0);
+        const vx = pt.x + cosT * rx * B.x + sinT * rz * N.x;
+        const vy = pt.y + cosT * rx * B.y + sinT * rz * N.y;
+        const vz = pt.z + cosT * rx * B.z + sinT * rz * N.z;
 
-    const leftSleevePoints = [
-      new THREE.Vector3(0.02, 0.0, 0.0),
-      new THREE.Vector3(-0.07, -0.13, -0.05),
-      new THREE.Vector3(-0.06, -0.26, -0.14),
-      new THREE.Vector3(0.03, -0.31, -0.18),
+        positions.push(vx, vy, vz);
+        uvs.push(u, v);
+      }
+    }
+
+    const ringVerts = radialSegs + 1;
+    for (let i = 0; i < tubularSegs; i += 1) {
+      for (let j = 0; j < radialSegs; j += 1) {
+        const a = i * ringVerts + j;
+        const b = (i + 1) * ringVerts + j;
+        const c = (i + 1) * ringVerts + (j + 1);
+        const d = i * ringVerts + (j + 1);
+        indices.push(a, b, d);
+        indices.push(b, c, d);
+      }
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geo.setIndex(indices);
+    return preparePBRGeometry(geo);
+  }
+
+  /**
+   * Builds an anatomical, multi-joint sculpted human hand with wrist, contoured metacarpal palm
+   * (dorsal arch, palmar hollow, thenar mound), 4 3-phalanx curved fingers, and an opposable thumb.
+   * Local coordinate convention:
+   *   Origin (0, 0, 0) = Wrist joint center
+   *   -Y = Distal direction (from wrist -> palm -> fingertips)
+   *   +Z = Palmar face (手心), -Z = Dorsal back of hand (手背)
+   *   +X * sideSign = Radial/Thumb side (拇指侧)
+   */
+  _buildAnatomicalHand(isLeft, handName) {
+    const handGroup = new THREE.Group();
+    handGroup.name = handName;
+    const sideSign = isLeft ? 1 : -1;
+
+    // 1. Forearm & Wrist Bridge (手腕与小臂连接段, y in [+0.045 .. +0.002])
+    const wristGeo = new THREE.CylinderGeometry(0.022, 0.021, 0.052, 24, 6, false);
+    wristGeo.scale(1.12, 1.0, 0.76);
+    preparePBRGeometry(wristGeo);
+    const wristMesh = new THREE.Mesh(wristGeo, this.skinMat);
+    wristMesh.position.set(0, 0.022, 0);
+    handGroup.add(wristMesh);
+
+    // 2. Sculpted Metacarpal Palm (手掌主体: y in [0.004 .. -0.052])
+    const palmGeo = new THREE.BoxGeometry(0.048, 0.056, 0.019, 12, 12, 6);
+    const pPos = palmGeo.attributes.position;
+    for (let i = 0; i < pPos.count; i += 1) {
+      let x = pPos.getX(i); // [-0.024 .. +0.024]
+      let y = pPos.getY(i); // [-0.028 .. +0.028]
+      let z = pPos.getZ(i); // [-0.0095 .. +0.0095]
+
+      const uWidth = x / 0.024; // [-1 .. +1]
+      const vDistal = (0.028 - y) / 0.056; // 0 at wrist, 1 at knuckles
+      const wThick = z / 0.0095; // [-1 .. +1]
+
+      // Elliptical rounding of box corners so the palm is a smooth organic cushion
+      const cornerRound = Math.sqrt(Math.max(0.18, 1.0 - 0.38 * uWidth * uWidth * wThick * wThick));
+      z *= cornerRound;
+
+      // Taper at the wrist heel (vDistal -> 0) and flare slightly across the knuckles (vDistal -> 0.85)
+      const widthProfile = 0.84 + 0.22 * Math.sin(vDistal * Math.PI * 0.72);
+      x *= widthProfile;
+
+      // Natural curved knuckle arch (middle knuckle extends furthest distally, pinky side recedes)
+      const radialCoord = uWidth * sideSign; // +1 on thumb side, -1 on pinky side
+      const knuckleArch = (1.0 - Math.pow(radialCoord - 0.15, 2) * 0.45) * 0.005 * vDistal;
+      y -= knuckleArch;
+
+      // Dorsal arch (back of hand z < 0 curves outward) & Palmar hollow (center of palm z > 0 dips slightly)
+      const archCurve = (1.0 - uWidth * uWidth) * Math.sin(vDistal * Math.PI);
+      if (z < 0) {
+        z -= archCurve * 0.0035;
+      } else {
+        z -= archCurve * 0.0022;
+        // Thenar eminence (大鱼际肌隆起 on the thumb base: radialCoord > 0, vDistal in [0.15..0.65])
+        if (radialCoord > 0) {
+          const thenar =
+            Math.pow(radialCoord, 1.4) *
+            Math.sin(Math.min(1.0, vDistal * 1.35) * Math.PI) *
+            0.0055;
+          z += thenar;
+        }
+      }
+
+      pPos.setXYZ(i, x, y - 0.024, z);
+    }
+    preparePBRGeometry(palmGeo);
+    const palmMesh = new THREE.Mesh(palmGeo, this.skinMat);
+    handGroup.add(palmMesh);
+
+    // 3. Four 3-Phalanx Articulated Curved Fingers (食指、中指、无名指、小指)
+    // Progressive natural curl from index to pinky (兰花/儒雅舒展手势)
+    const fingerSpecs = [
+      {
+        // Index finger (食指)
+        rootX: sideSign * 0.0175,
+        rootY: -0.049,
+        len: 0.043,
+        rBase: 0.0062,
+        rTip: 0.0044,
+        splayX: sideSign * 0.0025,
+        curl: [0.18, 0.42, 0.62],
+      },
+      {
+        // Middle finger (中指)
+        rootX: sideSign * 0.006,
+        rootY: -0.052,
+        len: 0.048,
+        rBase: 0.0066,
+        rTip: 0.0046,
+        splayX: 0.0,
+        curl: [0.24, 0.52, 0.78],
+      },
+      {
+        // Ring finger (无名指)
+        rootX: -sideSign * 0.006,
+        rootY: -0.050,
+        len: 0.044,
+        rBase: 0.0061,
+        rTip: 0.0043,
+        splayX: -sideSign * 0.002,
+        curl: [0.34, 0.72, 1.05],
+      },
+      {
+        // Pinky finger (小指)
+        rootX: -sideSign * 0.017,
+        rootY: -0.046,
+        len: 0.036,
+        rBase: 0.0053,
+        rTip: 0.0038,
+        splayX: -sideSign * 0.0045,
+        curl: [0.44, 0.88, 1.25],
+      },
     ];
-    const leftSleeveMesh = new THREE.Mesh(
-      this._createContinuousWideSleeveGeometry(leftSleevePoints, -1),
-      this.outerRobeMat,
+
+    for (const spec of fingerSpecs) {
+      const p0 = new THREE.Vector3(spec.rootX, spec.rootY + 0.004, 0.0);
+      const l1 = spec.len * 0.46;
+      const l2 = spec.len * 0.31;
+      const l3 = spec.len * 0.23;
+
+      const p1 = new THREE.Vector3(
+        p0.x + spec.splayX * 0.4,
+        p0.y - Math.cos(spec.curl[0]) * l1,
+        p0.z + Math.sin(spec.curl[0]) * l1,
+      );
+      const p2 = new THREE.Vector3(
+        p1.x + spec.splayX * 0.35,
+        p1.y - Math.cos(spec.curl[1]) * l2,
+        p1.z + Math.sin(spec.curl[1]) * l2,
+      );
+      const p3 = new THREE.Vector3(
+        p2.x + spec.splayX * 0.25,
+        p2.y - Math.cos(spec.curl[2]) * l3,
+        p2.z + Math.sin(spec.curl[2]) * l3,
+      );
+
+      const fingerGeo = this._createArticulatedFingerGeometry(
+        [p0, p1, p2, p3],
+        spec.rBase,
+        spec.rTip,
+      );
+      const fingerMesh = new THREE.Mesh(fingerGeo, this.skinMat);
+      handGroup.add(fingerMesh);
+    }
+
+    // 4. Opposable 3-Joint Thumb (大鱼际至拇指指尖连续曲面)
+    const thumbPoints = [
+      new THREE.Vector3(sideSign * 0.016, -0.014, 0.003),
+      new THREE.Vector3(sideSign * 0.028, -0.028, 0.011),
+      new THREE.Vector3(sideSign * 0.033, -0.043, 0.017),
+      new THREE.Vector3(sideSign * 0.029, -0.056, 0.021),
+    ];
+    const thumbGeo = this._createArticulatedFingerGeometry(thumbPoints, 0.0086, 0.0052);
+    const thumbMesh = new THREE.Mesh(thumbGeo, this.skinMat);
+    handGroup.add(thumbMesh);
+
+    return handGroup;
+  }
+
+  /**
+   * Builds a complete arm assembly:
+   * 1) Outer wide silk sleeve (广袖)
+   * 2) Integrated indigo brocade cuff border (织锦袖缘)
+   * 3) Fitted inner white silk under-sleeve (中衣窄袖)
+   * 4) Coaxially connected anatomical wrist & hand
+   */
+  _buildCompleteArmAssembly(armCurvePoints, isLeft, armGroupName, handGroupName, wristRoll = 0) {
+    const armGroup = new THREE.Group();
+    armGroup.name = armGroupName;
+
+    const curve = new THREE.CatmullRomCurve3(armCurvePoints);
+
+    // 1. Outer wide silk sleeve (u in [0.0, 0.92])
+    const outerSleeveGeo = this._createSleeveSectionGeometry(curve, 0.0, 0.92, 0.0, 28);
+    const outerSleeveMesh = new THREE.Mesh(outerSleeveGeo, this.outerRobeMat);
+    armGroup.add(outerSleeveMesh);
+
+    // 2. Integrated indigo brocade cuff border wrapped seamlessly at the sleeve mouth (u in [0.84, 0.93])
+    const cuffTrimGeo = this._createSleeveSectionGeometry(curve, 0.84, 0.93, 0.0022, 8);
+    const cuffTrimMesh = new THREE.Mesh(cuffTrimGeo, this.brocadeTrimMat);
+    armGroup.add(cuffTrimMesh);
+
+    // 3. Fitted inner white silk under-sleeve (中衣束袖) emerging from inside the wide sleeve (u in [0.58, 0.98])
+    const innerSubPoints = [
+      curve.getPointAt(0.58),
+      curve.getPointAt(0.74),
+      curve.getPointAt(0.88),
+      curve.getPointAt(0.98),
+    ];
+    const innerCurve = new THREE.CatmullRomCurve3(innerSubPoints);
+    const innerSleeveGeo = preparePBRGeometry(
+      new THREE.TubeGeometry(innerCurve, 16, 0.031, 16, false),
     );
-    this.leftArmGroup.add(leftSleeveMesh);
+    const innerSleeveMesh = new THREE.Mesh(innerSleeveGeo, this.innerSilkMat);
+    armGroup.add(innerSleeveMesh);
 
-    const leftCuffTrim = new THREE.Mesh(
-      preparePBRGeometry(new THREE.TorusGeometry(0.118, 0.014, 14, 28)),
-      this.brocadeTrimMat,
+    // 4. Anatomical Sculpted Hand aligned coaxially with the forearm tangent at u = 1.0
+    const handGroup = this._buildAnatomicalHand(isLeft, handGroupName);
+    const wristPos = curve.getPointAt(1.0);
+    const wristTangent = curve.getTangentAt(1.0).normalize();
+
+    handGroup.position.copy(wristPos);
+    // Align hand's distal axis (-Y) with the forearm tangent direction
+    const alignQuat = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, -1, 0),
+      wristTangent,
     );
-    leftCuffTrim.position.set(0.015, -0.34, -0.175);
-    leftCuffTrim.rotation.y = 0.52;
-    leftCuffTrim.scale.set(0.75, 1.18, 1.0);
-    this.leftArmGroup.add(leftCuffTrim);
+    const rollQuat = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(0, -1, 0),
+      wristRoll,
+    );
+    handGroup.quaternion.copy(alignQuat).multiply(rollQuat);
 
-    const leftHand = buildSculptedHand(true);
-    leftHand.position.set(0.055, -0.32, -0.19);
-    leftHand.rotation.x = Math.PI * 0.46;
-    leftHand.rotation.z = -0.48;
-    this.leftArmGroup.add(leftHand);
+    armGroup.add(handGroup);
+    return armGroup;
+  }
 
+  _buildArmsAndHands() {
+    // ================= LEFT ARM (Gracefully clasped behind back: 负手而立) =================
+    const leftArmPoints = [
+      new THREE.Vector3(0.02, 0.0, 0.0),
+      new THREE.Vector3(-0.06, -0.14, -0.06),
+      new THREE.Vector3(-0.04, -0.27, -0.15),
+      new THREE.Vector3(0.06, -0.33, -0.195),
+    ];
+    this.leftArmGroup = this._buildCompleteArmAssembly(
+      leftArmPoints,
+      true,
+      'LeftArmGroup',
+      'LeftHandGroup',
+      -0.35, // Palm facing gently outward/upward behind the waist belt
+    );
+    this.leftArmGroup.position.set(-0.21, 0.49, 0.0);
     this.torsoGroup.add(this.leftArmGroup);
 
-    // ================= RIGHT ARM (Poetic gesture arm) =================
-    this.rightArmGroup = new THREE.Group();
-    this.rightArmGroup.name = 'RightArmGroup';
-    this.rightArmGroup.position.set(0.22, 0.49, 0.0);
-
-    const rightSleevePoints = [
+    // ================= RIGHT ARM (Poised scholar gesture in front: 执礼吟咏) =================
+    const rightArmPoints = [
       new THREE.Vector3(-0.02, 0.0, 0.0),
-      new THREE.Vector3(0.075, -0.13, 0.06),
-      new THREE.Vector3(0.095, -0.23, 0.17),
-      new THREE.Vector3(0.075, -0.22, 0.27),
+      new THREE.Vector3(0.065, -0.14, 0.05),
+      new THREE.Vector3(0.075, -0.24, 0.155),
+      new THREE.Vector3(0.015, -0.22, 0.255),
     ];
-    const rightSleeveMesh = new THREE.Mesh(
-      this._createContinuousWideSleeveGeometry(rightSleevePoints, 1),
-      this.outerRobeMat,
+    this.rightArmGroup = this._buildCompleteArmAssembly(
+      rightArmPoints,
+      false,
+      'RightArmGroup',
+      'RightHandGroup',
+      0.42, // Natural supination: palm angled softly inward/upward
     );
-    this.rightArmGroup.add(rightSleeveMesh);
-
-    const rightCuffTrim = new THREE.Mesh(
-      preparePBRGeometry(new THREE.TorusGeometry(0.118, 0.014, 14, 28)),
-      this.brocadeTrimMat,
-    );
-    rightCuffTrim.position.set(0.078, -0.25, 0.255);
-    rightCuffTrim.rotation.y = -0.28;
-    rightCuffTrim.scale.set(0.75, 1.18, 1.0);
-    this.rightArmGroup.add(rightCuffTrim);
-
-    const rightHand = buildSculptedHand(false);
-    rightHand.position.set(0.075, -0.21, 0.305);
-    rightHand.rotation.x = -Math.PI * 0.36;
-    rightHand.rotation.z = 0.22;
-    this.rightArmGroup.add(rightHand);
-
+    this.rightArmGroup.position.set(0.21, 0.49, 0.0);
     this.torsoGroup.add(this.rightArmGroup);
   }
 

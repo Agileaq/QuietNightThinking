@@ -24,6 +24,8 @@ describe('3D Scene Graph & State Updates', () => {
     expect(poet.group.getObjectByName('PoetBeard')).toBeTruthy();
     expect(poet.group.getObjectByName('LeftArmGroup')).toBeTruthy();
     expect(poet.group.getObjectByName('RightArmGroup')).toBeTruthy();
+    expect(poet.group.getObjectByName('LeftHandGroup')).toBeTruthy();
+    expect(poet.group.getObjectByName('RightHandGroup')).toBeTruthy();
     expect(poet.group.getObjectByName('RobeSkirtLathe')).toBeTruthy();
     expect(poet.group.getObjectByName('PoetFutou')).toBeTruthy();
     expect(poet.group.getObjectByName('XiedieBelt')).toBeTruthy();
