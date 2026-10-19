@@ -216,21 +216,85 @@ export function getSceneStateAt(rawTime) {
     frost = 1.0 - 0.12 * smoothstep(28.0, 32.0, t);
   }
 
-  // Poet head pitch
+  // Poet 6-chapter full-body choreography:
+  // 0) intro (0-5s): Initial state near window
+  // 1) verse1 (5-11s, "床前明月光"): Turns toward the TangBed in the eastern chamber and looks at the bed
+  // 2) verse2 (11-17s, "疑是地上霜"): Turns toward the moonlit floor and looks down at the silver frost
+  // 3) verse3 (17-23.5s, "举头望明月"): Turns to the open North window and raises head to gaze at the Full Moon
+  // 4) verse4 (23.5-29s, "低头思故乡"): Bows head deeply in homesick contemplation
+  // 5) outro (29-32s, "尾 · 余韵"): Moves and rotates smoothly back to the exact initial state
+  const INIT_POS = [-0.42, 0.2, 0.62];
+  const BED_POS = [-0.25, 0.2, 0.92];
+  const FROST_POS = [-0.20, 0.2, 0.84];
+  const MOON_POS = [-0.12, 0.2, 0.48];
+  const BOW_POS = [-0.15, 0.2, 0.52];
+
+  const INIT_YAW = Math.PI - 0.14; // ~3.0016 rad
+  const BED_YAW = 1.18; // Facing East-Southeast directly at TangBed (1.35, 0.2, 1.55)
+  const FROST_YAW = 2.05; // Facing the indoor frosted floor patch (0.12, 0.21, 1.38)
+  const MOON_YAW = Math.PI; // Facing directly out the North window toward FullMoon (0, 11.5, -18)
+  const BOW_YAW = Math.PI - 0.06;
+
+  let poetAction = 'initial';
+  let poetPosition = [...INIT_POS];
+  let poetRotationY = INIT_YAW;
   let headPitch = 0;
-  if (t < 11.0) {
-    headPitch = -0.04 * smoothstep(5.0, 10.0, t);
+  let headYaw = 0;
+  let walkIntensity = 0;
+
+  if (t < 5.0) {
+    poetAction = 'initial';
+    poetPosition = [...INIT_POS];
+    poetRotationY = INIT_YAW;
+    headPitch = 0;
+    headYaw = 0;
+    walkIntensity = 0;
+  } else if (t < 11.0) {
+    // Verse 1: Turn around to look at the bed ("床前明月光")
+    poetAction = 'look_at_bed';
+    const uTurn = smoothstep(5.0, 6.8, t);
+    poetPosition = lerpVec3(INIT_POS, BED_POS, uTurn);
+    poetRotationY = lerp(INIT_YAW, BED_YAW, uTurn);
+    headPitch = lerp(0, -0.12, uTurn);
+    headYaw = lerp(0, -0.08, uTurn);
+    walkIntensity = Math.sin(uTurn * Math.PI);
   } else if (t < 17.0) {
-    headPitch = lerp(-0.04, -0.14, smoothstep(11.0, 14.5, t));
+    // Verse 2: Look down at the frost-covered floor ("疑是地上霜")
+    poetAction = 'look_at_frost';
+    const uFrost = smoothstep(11.0, 12.8, t);
+    poetPosition = lerpVec3(BED_POS, FROST_POS, uFrost);
+    poetRotationY = lerp(BED_YAW, FROST_YAW, uFrost);
+    headPitch = lerp(-0.12, -0.38, uFrost);
+    headYaw = lerp(-0.08, 0.05, uFrost);
+    walkIntensity = Math.sin(uFrost * Math.PI) * 0.65;
   } else if (t < 23.5) {
-    const upIn = smoothstep(17.2, 19.6, t);
-    const holdOut = 1.0 - 0.15 * smoothstep(22.3, 23.5, t);
-    headPitch = lerp(-0.14, 0.58, upIn) * holdOut;
+    // Verse 3: Turn to window and raise head to gaze at the Full Moon ("举头望明月")
+    poetAction = 'look_at_moon';
+    const uMoon = smoothstep(17.0, 19.0, t);
+    const holdOut = 1.0 - 0.12 * smoothstep(22.4, 23.5, t);
+    poetPosition = lerpVec3(FROST_POS, MOON_POS, uMoon);
+    poetRotationY = lerp(FROST_YAW, MOON_YAW, uMoon);
+    headPitch = lerp(-0.38, 0.58, uMoon) * holdOut;
+    headYaw = lerp(0.05, 0.0, uMoon);
+    walkIntensity = Math.sin(uMoon * Math.PI) * 0.85;
   } else if (t < 29.0) {
-    const downIn = smoothstep(23.5, 25.4, t);
-    headPitch = lerp(0.49, -0.42, downIn);
+    // Verse 4: Bow head deeply in thoughts of homeland ("低头思故乡")
+    poetAction = 'bow_head_homesick';
+    const uBow = smoothstep(23.5, 25.4, t);
+    poetPosition = lerpVec3(MOON_POS, BOW_POS, uBow);
+    poetRotationY = lerp(MOON_YAW, BOW_YAW, uBow);
+    headPitch = lerp(0.51, -0.46, uBow);
+    headYaw = lerp(0.0, -0.06, uBow);
+    walkIntensity = Math.sin(uBow * Math.PI) * 0.35;
   } else {
-    headPitch = lerp(-0.42, -0.1, smoothstep(29.0, 31.8, t));
+    // Outro: Walk and turn smoothly back to initial position & posture ("尾部时人物移动恢复到初始状态")
+    poetAction = 'return_to_initial';
+    const uReturn = smoothstep(29.0, 31.5, t);
+    poetPosition = lerpVec3(BOW_POS, INIT_POS, uReturn);
+    poetRotationY = lerp(BOW_YAW, INIT_YAW, uReturn);
+    headPitch = lerp(-0.46, 0.0, uReturn);
+    headYaw = lerp(-0.06, 0.0, uReturn);
+    walkIntensity = Math.sin(uReturn * Math.PI);
   }
 
   // Homeland warm golden memory glow ("低头思故乡")
@@ -271,7 +335,12 @@ export function getSceneStateAt(rawTime) {
     chapter,
     chapterProgress,
     frost,
+    poetAction,
+    poetPosition,
+    poetRotationY,
     headPitch,
+    headYaw,
+    walkIntensity,
     homelandGlow,
     moonbeamIntensity,
     moonHalo,

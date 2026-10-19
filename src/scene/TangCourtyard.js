@@ -24,30 +24,50 @@ export class TangCourtyard {
   }
 
   _buildLighting() {
-    const ambient = new THREE.HemisphereLight(0x4168a8, 0x0b101d, 0.68);
+    const ambient = new THREE.HemisphereLight(0x3a5f9c, 0x0a0e1a, 0.56);
     this.group.add(ambient);
 
     // Primary directional moonlight from the Full Moon at (0, 11.5, -18)
-    this.moonLight = new THREE.DirectionalLight(0xd8e8ff, 1.65);
+    this.moonLight = new THREE.DirectionalLight(0xd4e6ff, 1.45);
     this.moonLight.position.set(0.0, 11.5, -18.0);
     this.group.add(this.moonLight);
 
-    // Focused moonlight SpotLight shining specifically through the house window into the room
-    this.windowSpotLight = new THREE.SpotLight(0xdcebff, 3.2, 16.0, Math.PI * 0.22, 0.55, 1.2);
+    // Focused moonlight SpotLight shining specifically through the house window into the room with soft shadows
+    this.windowSpotLight = new THREE.SpotLight(0xd8ebff, 3.4, 16.0, Math.PI * 0.22, 0.62, 1.2);
     this.windowSpotLight.position.set(0.15, 4.2, -3.5);
-    this.windowSpotLight.target.position.set(0.35, 0.18, 1.45);
+    this.windowSpotLight.target.position.set(0.25, 0.18, 1.35);
+    this.windowSpotLight.castShadow = true;
+    this.windowSpotLight.shadow.mapSize.width = 1024;
+    this.windowSpotLight.shadow.mapSize.height = 1024;
+    this.windowSpotLight.shadow.camera.near = 1.5;
+    this.windowSpotLight.shadow.camera.far = 12.0;
+    this.windowSpotLight.shadow.bias = -0.0006;
+    this.windowSpotLight.shadow.normalBias = 0.02;
+    this.windowSpotLight.shadow.radius = 4;
     this.group.add(this.windowSpotLight);
     this.group.add(this.windowSpotLight.target);
 
+    // Dedicated Cold Rim Light (角色后上方冷色轮廓光) to trace the silhouette of Li Bai's Futou & silk shoulders
+    this.rimLight = new THREE.SpotLight(0x9ec8ff, 2.35, 8.0, Math.PI * 0.32, 0.7, 1.2);
+    this.rimLight.name = 'PoetRimLight';
+    this.rimLight.position.set(-0.22, 2.62, -0.25);
+    this.rimLight.target.position.set(-0.25, 1.15, 0.75);
+    this.group.add(this.rimLight);
+    this.group.add(this.rimLight.target);
+
     // Subtle cool fill light in outdoor courtyard
-    const courtyardFill = new THREE.PointLight(0x7aa8ff, 0.65, 14.0);
+    const courtyardFill = new THREE.PointLight(0x6e9eff, 0.55, 14.0);
     courtyardFill.position.set(-1.2, 3.2, -2.5);
     this.group.add(courtyardFill);
 
-    // Warm indoor candle light on the low table beside the bed
-    this.candleLight = new THREE.PointLight(0xffaa44, 1.35, 6.8, 1.5);
+    // Warm indoor candle light on the low table beside the bed + subtle warm front bounce on the poet
+    this.candleLight = new THREE.PointLight(0xffa844, 1.35, 6.8, 1.5);
     this.candleLight.position.set(1.55, 1.15, 0.72);
     this.group.add(this.candleLight);
+
+    const warmIndoorBounce = new THREE.PointLight(0xffb266, 0.38, 4.5, 1.6);
+    warmIndoorBounce.position.set(0.45, 1.25, 1.65);
+    this.group.add(warmIndoorBounce);
   }
 
   _buildGroundAndChamber() {
@@ -55,12 +75,13 @@ export class TangCourtyard {
     const courtyardGeo = new THREE.PlaneGeometry(42, 42, 32, 32);
     const courtyardMat = new THREE.MeshStandardMaterial({
       color: 0x0f1829,
-      roughness: 0.8,
+      roughness: 0.78,
       metalness: 0.14,
     });
     const courtyardFloor = new THREE.Mesh(courtyardGeo, courtyardMat);
     courtyardFloor.rotation.x = -Math.PI / 2;
     courtyardFloor.position.y = 0.0;
+    courtyardFloor.receiveShadow = true;
     courtyardFloor.name = 'CourtyardFloor';
     this.group.add(courtyardFloor);
 
@@ -73,6 +94,7 @@ export class TangCourtyard {
     for (let i = 0; i < 5; i += 1) {
       const slab = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.04, 0.85), slabMat);
       slab.position.set(-0.2 + (i % 2) * 0.12, 0.02, -1.2 - i * 1.15);
+      slab.receiveShadow = true;
       this.group.add(slab);
     }
 
@@ -84,15 +106,19 @@ export class TangCourtyard {
     });
     const foundation = new THREE.Mesh(new THREE.BoxGeometry(6.0, 0.16, 4.7), foundationMat);
     foundation.position.set(0.2, 0.08, 1.75);
+    foundation.receiveShadow = true;
     this.group.add(foundation);
 
-    const woodFloorMat = new THREE.MeshStandardMaterial({
-      color: 0x2a1c15,
-      roughness: 0.52,
-      metalness: 0.1,
+    const woodFloorMat = new THREE.MeshPhysicalMaterial({
+      color: 0x281a13,
+      roughness: 0.46,
+      metalness: 0.08,
+      clearcoat: 0.22,
+      clearcoatRoughness: 0.42,
     });
     const chamberFloor = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.06, 4.3), woodFloorMat);
     chamberFloor.position.set(0.2, 0.17, 1.75);
+    chamberFloor.receiveShadow = true;
     chamberFloor.name = 'ChamberFloor';
     this.group.add(chamberFloor);
 
@@ -107,6 +133,7 @@ export class TangCourtyard {
     // Stone steps leading from chamber veranda to courtyard
     const stepMesh = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 0.55), foundationMat);
     stepMesh.position.set(-0.4, 0.06, -0.72);
+    stepMesh.receiveShadow = true;
     this.group.add(stepMesh);
   }
 
@@ -671,7 +698,8 @@ export class TangCourtyard {
   }
 
   _buildVolumetricMoonbeams() {
-    // 1. Volumetric light shafts streaming strictly FROM the North Wall window opening (z = -0.35, y in [0.9, 2.3])
+    // 1. Tyndall Volumetric Light Shafts (丁达尔体积光束: ConeGeometry + Fresnel & Depth-Decay Custom Shader)
+    //    Streaming strictly FROM the North Wall window opening (z = -0.35, y in [0.9, 2.3])
     //    down onto the indoor floor in front of the bed (z in [0.1, 2.75], y = 0.20)
     const beamGroup = new THREE.Group();
     beamGroup.name = 'MoonlightBeam';
@@ -683,37 +711,59 @@ export class TangCourtyard {
       blending: THREE.AdditiveBlending,
       uniforms: {
         uIntensity: { value: 0.85 },
-        uColor: { value: new THREE.Color(0xcde2ff) },
+        uTime: { value: 0.0 },
+        uColor: { value: new THREE.Color(0xc8e0ff) },
       },
       vertexShader: `
         varying vec2 vUv;
+        varying vec3 vNormalView;
+        varying vec3 vViewDir;
         void main() {
           vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          vNormalView = normalize(normalMatrix * normal);
+          vViewDir = normalize(-mvPosition.xyz);
+          gl_Position = projectionMatrix * mvPosition;
         }
       `,
       fragmentShader: `
         varying vec2 vUv;
+        varying vec3 vNormalView;
+        varying vec3 vViewDir;
         uniform float uIntensity;
+        uniform float uTime;
         uniform vec3 uColor;
         void main() {
-          // vUv.y = 1 at the window opening, vUv.y = 0 deep inside the room
-          float longitudinal = smoothstep(0.0, 0.15, vUv.y) * smoothstep(1.0, 0.2, 1.0 - vUv.y);
-          float edgeFade = smoothstep(0.0, 0.18, vUv.x) * smoothstep(1.0, 0.82, vUv.x);
-          // Subtle window-lattice ray streaks
-          float rays = 0.78 + 0.22 * cos(vUv.x * 28.0);
-          float alpha = longitudinal * edgeFade * rays * 0.15 * uIntensity;
+          // Fresnel edge attenuation: smooths out polygon silhouettes at grazing angles
+          float ndotv = abs(dot(normalize(vNormalView), normalize(vViewDir)));
+          float fresnelFade = pow(ndotv, 0.65);
+
+          // Depth / longitudinal attenuation from window entry (vUv.y=1) to floor dissipation (vUv.y=0)
+          float longitudinal = smoothstep(0.0, 0.18, vUv.y) * smoothstep(1.0, 0.14, 1.0 - vUv.y);
+          float edgeFade = smoothstep(0.0, 0.22, vUv.x) * smoothstep(1.0, 0.78, vUv.x);
+
+          // Subtle window-lattice Tyndall ray streaks with gentle atmospheric drift
+          float rays = 0.8 + 0.2 * cos(vUv.x * 26.0 + sin(uTime * 0.45 + vUv.y * 4.0) * 0.6);
+          float alpha = longitudinal * edgeFade * fresnelFade * rays * 0.125 * uIntensity;
           gl_FragColor = vec4(uColor, alpha);
         }
       `,
     });
 
-    // Stack angled volumetric planes from top of window opening to bottom sill, slanting into the room
-    const slices = 6;
+    // Primary Tyndall ConeGeometry volume passing through the open window into the chamber
+    const tyndallConeGeo = new THREE.ConeGeometry(1.38, 3.25, 36, 1, true);
+    const tyndallCone = new THREE.Mesh(tyndallConeGeo, this.moonBeamShaderMat);
+    tyndallCone.position.set(0.12, 1.08, 0.88);
+    tyndallCone.rotation.x = -Math.PI / 2 + 0.52;
+    tyndallCone.scale.set(1.18, 1.0, 0.58);
+    beamGroup.add(tyndallCone);
+
+    // Layered angled volumetric planes from top of window opening to bottom sill
+    const slices = 5;
     for (let i = 0; i < slices; i += 1) {
       const frac = i / (slices - 1);
-      const winY = 1.15 + frac * 1.12; // Window opening height [1.15 .. 2.27]
-      const floorZ = 1.55 + frac * 1.15; // Where this ray sheet lands on indoor floor [1.55 .. 2.70]
+      const winY = 1.15 + frac * 1.12;
+      const floorZ = 1.55 + frac * 1.15;
       const dz = floorZ - (-0.35);
       const dy = winY - 0.2;
       const length = Math.hypot(dz, dy);
@@ -726,15 +776,6 @@ export class TangCourtyard {
       beamGroup.add(sheet);
     }
 
-    // Cross-vertical light curtain planes for side-angle visibility
-    for (let s = -2; s <= 2; s += 1) {
-      const sidePlane = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 1.65), this.moonBeamShaderMat);
-      sidePlane.rotation.y = Math.PI / 2;
-      sidePlane.rotation.z = -0.46;
-      sidePlane.position.set(0.12 + s * 0.42, 1.05, 0.95);
-      beamGroup.add(sidePlane);
-    }
-
     this.group.add(beamGroup);
 
     // 2. Projected Window-Lattice Moonlight Patch on the indoor wooden floor ("床前明月光")
@@ -744,7 +785,7 @@ export class TangCourtyard {
       blending: THREE.AdditiveBlending,
       uniforms: {
         uIntensity: { value: 0.9 },
-        uColor: { value: new THREE.Color(0xd8eaff) },
+        uColor: { value: new THREE.Color(0xd4e8ff) },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -758,9 +799,8 @@ export class TangCourtyard {
         uniform float uIntensity;
         uniform vec3 uColor;
         void main() {
-          // Soft rectangular window projection with mullion bar shadows
-          float borderX = smoothstep(0.02, 0.14, vUv.x) * smoothstep(0.98, 0.86, vUv.x);
-          float borderY = smoothstep(0.02, 0.16, vUv.y) * smoothstep(0.98, 0.82, vUv.y);
+          float borderX = smoothstep(0.02, 0.16, vUv.x) * smoothstep(0.98, 0.84, vUv.x);
+          float borderY = smoothstep(0.02, 0.18, vUv.y) * smoothstep(0.98, 0.80, vUv.y);
           float windowFrame = borderX * borderY;
 
           // Lattice shadow grid on the right & top edge of the projected window light
@@ -768,7 +808,7 @@ export class TangCourtyard {
           float hBars = smoothstep(0.12, 0.4, abs(sin(vUv.y * 3.14159 * 4.0)));
           float latticeShadow = mix(1.0, vBars * hBars, smoothstep(0.62, 0.85, vUv.x) * 0.65);
 
-          float glow = windowFrame * latticeShadow * 0.34 * uIntensity;
+          float glow = windowFrame * latticeShadow * 0.28 * uIntensity;
           gl_FragColor = vec4(uColor, glow);
         }
       `,
@@ -783,6 +823,7 @@ export class TangCourtyard {
 
   update(state) {
     if (!state) return;
+    const t = state.t ?? 0;
 
     if (this.moonHaloMat) {
       this.moonHaloMat.uniforms.uHaloIntensity.value = state.moonHalo ?? 0.7;
@@ -790,10 +831,20 @@ export class TangCourtyard {
 
     const beamInt = state.moonbeamIntensity ?? 0.85;
     if (this.moonBeamShaderMat) {
-      this.moonBeamShaderMat.uniforms.uIntensity.value = 0.55 + 0.6 * beamInt;
+      this.moonBeamShaderMat.uniforms.uIntensity.value = 0.55 + 0.55 * beamInt;
+      this.moonBeamShaderMat.uniforms.uTime.value = t;
     }
     if (this.windowFloorMat) {
-      this.windowFloorMat.uniforms.uIntensity.value = 0.6 + 0.55 * beamInt;
+      this.windowFloorMat.uniforms.uIntensity.value = 0.55 + 0.5 * beamInt;
+    }
+
+    // Keep the cold rim light focused on the poet's shoulders & Futou as he turns and moves
+    if (this.rimLight && Array.isArray(state.poetPosition)) {
+      this.rimLight.target.position.set(
+        state.poetPosition[0],
+        state.poetPosition[1] + 1.25,
+        state.poetPosition[2],
+      );
     }
 
     if (this.candleLight && this.candleFlame) {
@@ -803,7 +854,7 @@ export class TangCourtyard {
     }
 
     if (this.pineGroup) {
-      this.pineGroup.rotation.z = Math.sin((state.t ?? 0) * 0.8) * 0.012;
+      this.pineGroup.rotation.z = Math.sin(t * 0.8) * 0.012;
     }
   }
 }

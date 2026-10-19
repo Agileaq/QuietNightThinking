@@ -34,10 +34,39 @@ describe('TimelineData deterministic state', () => {
     expect(getSceneStateAt(18.0).frost).toBeGreaterThanOrEqual(0.95);
   });
 
-  it('raises poet headPitch (> 0.35 rad) during verse3 and lowers (< -0.25 rad) during verse4', () => {
-    expect(getSceneStateAt(2.0).headPitch).toBeCloseTo(0, 1);
-    expect(getSceneStateAt(21.0).headPitch).toBeGreaterThan(0.35);
-    expect(getSceneStateAt(26.5).headPitch).toBeLessThan(-0.25);
+  it('choreographs poet actions across all 6 chapters: turn to bed (verse1), look at frosted floor (verse2), look up at moon (verse3), bow head (verse4), and move back to initial state (outro)', () => {
+    const initial = getSceneStateAt(2.0);
+    expect(initial.poetAction).toBe('initial');
+    expect(initial.headPitch).toBeCloseTo(0, 1);
+
+    // Verse 1 ("床前明月光"): turns toward the bed in the eastern chamber
+    const v1 = getSceneStateAt(8.5);
+    expect(v1.poetAction).toBe('look_at_bed');
+    expect(Math.abs(v1.poetRotationY - initial.poetRotationY)).toBeGreaterThan(1.2);
+
+    // Verse 2 ("疑是地上霜"): looks down at the frost-covered indoor floor
+    const v2 = getSceneStateAt(14.5);
+    expect(v2.poetAction).toBe('look_at_frost');
+    expect(v2.headPitch).toBeLessThan(-0.3);
+
+    // Verse 3 ("举头望明月"): turns to window and raises head to gaze at the moon
+    const v3 = getSceneStateAt(21.0);
+    expect(v3.poetAction).toBe('look_at_moon');
+    expect(v3.headPitch).toBeGreaterThan(0.45);
+    expect(v3.poetRotationY).toBeCloseTo(Math.PI, 1);
+
+    // Verse 4 ("低头思故乡"): bows head deeply
+    const v4 = getSceneStateAt(26.5);
+    expect(v4.poetAction).toBe('bow_head_homesick');
+    expect(v4.headPitch).toBeLessThan(-0.35);
+
+    // Outro ("尾 · 余韵"): moves and rotates back to initial state
+    const outroEnd = getSceneStateAt(31.8);
+    expect(outroEnd.poetAction).toBe('return_to_initial');
+    expect(outroEnd.poetPosition[0]).toBeCloseTo(initial.poetPosition[0], 2);
+    expect(outroEnd.poetPosition[2]).toBeCloseTo(initial.poetPosition[2], 2);
+    expect(outroEnd.poetRotationY).toBeCloseTo(initial.poetRotationY, 2);
+    expect(outroEnd.headPitch).toBeCloseTo(initial.headPitch, 2);
   });
 
   it('activates homelandGlow during verse4 and camera lookAt elevates on verse3', () => {

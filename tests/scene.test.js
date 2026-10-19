@@ -15,21 +15,56 @@ describe('3D Scene Graph & State Updates', () => {
     expect(courtyard.group.getObjectByName('HouseWalls')).toBeTruthy();
     expect(courtyard.group.getObjectByName('MoonlightBeam')).toBeTruthy();
     expect(courtyard.group.getObjectByName('WindowFloorLight')).toBeTruthy();
+    expect(courtyard.group.getObjectByName('PoetRimLight')).toBeTruthy();
     courtyard.update(getSceneStateAt(8.0));
   });
 
-  it('constructs detailed PoetCharacter with articulated arms, hands, beard, facial features, and lathe robe, and updates head pitch', () => {
+  it('constructs next-gen PBR PoetCharacter (MeshPhysicalMaterial with sheen, normalMap, aoMap, Futou, XiedieBelt) and executes full 6-chapter choreography', () => {
     const poet = new PoetCharacter();
     expect(poet.group.getObjectByName('PoetBeard')).toBeTruthy();
     expect(poet.group.getObjectByName('LeftArmGroup')).toBeTruthy();
     expect(poet.group.getObjectByName('RightArmGroup')).toBeTruthy();
     expect(poet.group.getObjectByName('RobeSkirtLathe')).toBeTruthy();
+    expect(poet.group.getObjectByName('PoetFutou')).toBeTruthy();
+    expect(poet.group.getObjectByName('XiedieBelt')).toBeTruthy();
 
+    const robeMesh = poet.group.getObjectByName('RobeSkirtLathe');
+    expect(robeMesh.material.isMeshPhysicalMaterial).toBe(true);
+    expect(robeMesh.material.sheen).toBeGreaterThan(0.5);
+    expect(robeMesh.material.normalMap).toBeTruthy();
+    expect(robeMesh.material.aoMap).toBeTruthy();
+
+    // Intro initial state
+    poet.update(getSceneStateAt(1.0));
+    const initX = poet.group.position.x;
+    const initZ = poet.group.position.z;
+    const initRotY = poet.group.rotation.y;
+
+    // Verse 1: Turned toward the bed
+    poet.update(getSceneStateAt(8.5));
+    const bedRotY = poet.group.rotation.y;
+    expect(Math.abs(bedRotY - initRotY)).toBeGreaterThan(1.2);
+
+    // Verse 2: Looking down at frosted floor
+    poet.update(getSceneStateAt(14.5));
+    const frostRotX = poet.headGroup.rotation.x;
+    expect(frostRotX).toBeGreaterThan(0.25);
+
+    // Verse 3: Looking up at the moon
     poet.update(getSceneStateAt(21.0));
     const lookUpRotX = poet.headGroup.rotation.x;
+    expect(lookUpRotX).toBeLessThan(-0.35);
+
+    // Verse 4: Bowed head
     poet.update(getSceneStateAt(26.5));
     const lookDownRotX = poet.headGroup.rotation.x;
-    expect(lookUpRotX).not.toBeCloseTo(lookDownRotX, 2);
+    expect(lookDownRotX).toBeGreaterThan(0.3);
+
+    // Outro: Moved back to initial state
+    poet.update(getSceneStateAt(31.8));
+    expect(poet.group.position.x).toBeCloseTo(initX, 2);
+    expect(poet.group.position.z).toBeCloseTo(initZ, 2);
+    expect(poet.group.rotation.y).toBeCloseTo(initRotY, 2);
   });
 
   it('updates VisualEffects frost shader uniform and homeland glow intensity', () => {

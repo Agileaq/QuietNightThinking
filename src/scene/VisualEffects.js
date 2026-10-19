@@ -52,31 +52,64 @@ export class VisualEffects {
   }
 
   _buildMoonlightDust() {
-    // Dust motes floating directly inside the slanted window moonlight beam entering the room
-    const count = 160;
+    // 260 dust motes floating inside the slanted Tyndall window moonlight beam with 3D noise drift & twinkling
+    const count = 260;
     const positions = new Float32Array(count * 3);
+    const phases = new Float32Array(count);
+
     for (let i = 0; i < count; i += 1) {
       const a = ((i * 17) % 100) / 100;
       const b = ((i * 31) % 100) / 100;
       const c = ((i * 47) % 100) / 100;
-      // Distributed along the beam from the window (z=-0.35, y=2.3) to indoor floor (z=2.6, y=0.25)
       const z = -0.35 + c * 3.0;
-      const maxBeamY = 2.4 - (c * 1.6);
+      const maxBeamY = 2.38 - c * 1.55;
       positions[i * 3] = -0.95 + a * 2.25;
       positions[i * 3 + 1] = 0.24 + b * Math.max(0.4, maxBeamY);
       positions[i * 3 + 2] = z;
+      phases[i] = i * 1.6180339;
     }
+
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const mat = new THREE.PointsMaterial({
-      color: 0xd8ebff,
-      size: 0.04,
+    geo.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
+
+    this.moonDustMat = new THREE.ShaderMaterial({
       transparent: true,
-      opacity: 0.65,
-      blending: THREE.AdditiveBlending,
       depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uTime: { value: 0.0 },
+        uColor: { value: new THREE.Color(0xdceeff) },
+      },
+      vertexShader: `
+        attribute float aPhase;
+        uniform float uTime;
+        varying float vTwinkle;
+        void main() {
+          // 3D smooth pseudo-Perlin noise drift inside the Tyndall beam
+          vec3 p = position;
+          p.x += sin(uTime * 0.55 + aPhase) * 0.065 + cos(uTime * 0.28 + p.y * 3.2) * 0.035;
+          p.y += sin(uTime * 0.42 + aPhase * 1.3) * 0.075;
+          p.z += cos(uTime * 0.48 + aPhase * 0.7) * 0.055;
+
+          vTwinkle = 0.35 + 0.65 * (0.5 + 0.5 * sin(uTime * 2.4 + aPhase * 3.7));
+          vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+          gl_PointSize = (18.0 + 10.0 * vTwinkle) / max(0.8, -mvPosition.z);
+          gl_Position = projectionMatrix * mvPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        varying float vTwinkle;
+        void main() {
+          float d = length(gl_PointCoord - vec2(0.5)) * 2.0;
+          float softDisc = pow(max(0.0, 1.0 - d), 2.2);
+          gl_FragColor = vec4(uColor, softDisc * vTwinkle * 0.72);
+        }
+      `,
     });
-    this.moonDust = new THREE.Points(geo, mat);
+
+    this.moonDust = new THREE.Points(geo, this.moonDustMat);
     this.moonDust.name = 'MoonlightDust';
     this.group.add(this.moonDust);
   }
@@ -249,8 +282,8 @@ export class VisualEffects {
       this.frostSparkles.position.y = Math.sin(t * 1.4) * 0.04;
     }
 
-    if (this.moonDust) {
-      this.moonDust.position.y = Math.sin(t * 0.7) * 0.08;
+    if (this.moonDustMat) {
+      this.moonDustMat.uniforms.uTime.value = t;
     }
 
     if (this.homelandGroup && this.homelandMaterial) {

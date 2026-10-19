@@ -9,6 +9,7 @@ import { CameraController } from './core/CameraController.js';
 import { TangCourtyard } from './scene/TangCourtyard.js';
 import { PoetCharacter } from './scene/PoetCharacter.js';
 import { VisualEffects } from './scene/VisualEffects.js';
+import { createNightEnvironmentTexture } from './scene/PBRTextures.js';
 import { AudioEngine } from './audio/AudioEngine.js';
 import { PlayerUI } from './ui/PlayerUI.js';
 
@@ -21,7 +22,7 @@ function bootstrapApp() {
   scene.background = new THREE.Color(0x070b16);
   scene.fog = new THREE.FogExp2(0x070b16, 0.032);
 
-  // 2. Camera & Renderer
+  // 2. Camera & Renderer (ACESFilmicToneMapping + PCFSoftShadowMap)
   const camera = new THREE.PerspectiveCamera(
     44,
     window.innerWidth / window.innerHeight,
@@ -35,20 +36,28 @@ function bootstrapApp() {
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  renderer.toneMappingExposure = 1.18;
   container.appendChild(renderer.domElement);
 
-  // 3. Post-processing Bloom Pipeline
+  // PMREM Cold-Moonlight Night & Warm-Interior Environment Reflection Map for PBR Materials
+  const envMap = createNightEnvironmentTexture(renderer);
+  if (envMap) {
+    scene.environment = envMap;
+  }
+
+  // 3. Post-processing Selective Bloom Pipeline (High threshold to prevent white-out wash)
   const composer = new EffectComposer(renderer);
   const renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
 
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    0.68, // strength
-    0.45, // radius
-    0.72, // threshold
+    0.46, // strength (selective glow, avoiding harsh white wash)
+    0.38, // radius
+    0.84, // high threshold so only moon, candle, frost crystals, and specular rims bloom
   );
   composer.addPass(bloomPass);
 
